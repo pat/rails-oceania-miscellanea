@@ -66,15 +66,30 @@ module ActionController
         #
         #   caches_action :index, :if => Proc.new { Time.now.wday == 1 }
         def before(controller)
-          unless check = (@options.delete(:if) || @block)
+          unless @check = (@options.delete(:if) || @block)
             return default_before(controller)
           end
           
-          case check
+          case @check
           when Symbol
-            return default_before(controller) if controller.send(check)
+            return default_before(controller) if controller.send(@check)
           when Proc
-            return default_before(controller) if controller.instance_eval(&check)
+            return default_before(controller) if controller.instance_eval(&@check)
+          end
+        end
+        
+        alias_method :default_after, :after
+        
+        def after(controller) #:nodoc:
+          case @check
+          when nil
+            return default_after(controller)
+          when Symbol
+            return default_after(controller) if controller.send(@check)
+          when Proc
+            return default_after(controller) if controller.instance_eval(&@check)
+          else
+            return true
           end
         end
       end
