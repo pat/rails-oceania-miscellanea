@@ -1,13 +1,58 @@
 ConditionalCaching
 ==================
 
-Introduction goes here.
+This plugin provides conditional checks for both action and fragment caches. It's nothing too complicated, and can be used in much the same way as the existing caching methods. I built it to stop pages being cached when there was a user logged in (which is particularly useful when, more often than not, the page is viewed without a login).
 
 
-Example
+Examples
+========
+
+For action caching, the caches_action method accepts an :if option - which can be either a symbol or a proc.
+
+Using a symbol:
+
+  caches_action :index, :if => :i_can_has_cache?
+  # ...
+  def i_can_has_cache?
+    Time.now.wday == 1 # only cache on Mondays
+  end
+
+Using a Proc:
+
+  caches_action :index, :if => Proc.new { Time.now.wday == 1 }
+
+For fragment caching, which is a two-step process, syntax is almost the same as the default methods, except the methods have the prefix conditional_ and the first parameter is the value to check before caching.
+
+In actions:
+
+  if conditional_read_fragment(@current_user.nil?)
+    # code that should not be run if there's a cache
+  end
+
+Passing additional caching params works in the same way
+
+  if conditional_read_fragment(@current_user.nil?, :page => params[:page])
+    # ...
+  end
+
+And for views:
+
+  <% conditional_cache @current_user.nil? do %>
+    <!-- view code that will only be cached when @current_user is nil -->
+  <% end %>
+
+Again, just like the default cache method, it also accepts additional
+parameters:
+
+  <% conditional_cache @current_user.nil?, :page => params[:page] %>
+    <!-- view code -->
+  <% end %>
+
+
+Support
 =======
 
-Example goes here.
+Well, the code's not too complex, so have a look at that if you're having troubles. Also, you can find me at http://freelancing-gods.com, and my email address is pat at that domain.
 
 
-Copyright (c) 2007 [name of plugin creator], released under the MIT license
+Copyright (c) 2007 Pat Allan, released under the MIT license
