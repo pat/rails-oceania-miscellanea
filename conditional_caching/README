@@ -11,9 +11,9 @@ For action caching, the caches_action method accepts an :if option - which can b
 
 Using a symbol:
 
-  caches_action :index, :if => :i_can_has_cache?
+  caches_action :index, :if => :cache_today?
   # ...
-  def i_can_has_cache?
+  def cache_today?
     Time.now.wday == 1 # only cache on Mondays
   end
 
