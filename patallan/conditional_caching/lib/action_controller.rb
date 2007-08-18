@@ -35,6 +35,8 @@ module ActionController
   module Caching
     module Actions
       class ActionCacheFilter
+        attr_accessor :check
+        
         # This code allows a block from the caches_action method.
         # See comments above explaining why it's commented out.
         #
@@ -66,30 +68,29 @@ module ActionController
         #
         #   caches_action :index, :if => Proc.new { Time.now.wday == 1 }
         def before(controller)
-          unless @check = (@options.delete(:if) || @block)
-            return default_before(controller)
-          end
+          self.check = (@options.delete(:if) || @block)
           
-          case @check
-          when Symbol
-            return default_before(controller) if controller.send(@check)
-          when Proc
-            return default_before(controller) if controller.instance_eval(&@check)
-          end
+          return default_before(controller) if check?(controller)
         end
         
         alias_method :default_after, :after
         
         def after(controller) #:nodoc:
-          case @check
+          return default_after(controller) if check?(controller)
+        end
+        
+        private
+        
+        def check?(controller)
+          case check
           when nil
-            return default_after(controller)
+            true
           when Symbol
-            return default_after(controller) if controller.send(@check)
+            controller.send(check)
           when Proc
-            return default_after(controller) if controller.instance_eval(&@check)
+            controller.instance_eval(&check)
           else
-            return true
+            false
           end
         end
       end
