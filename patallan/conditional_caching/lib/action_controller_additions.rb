@@ -1,6 +1,5 @@
-# Changes and additions to ActionController
-module ActionController
-  class Base
+module ConditionalFragmentCaching
+  module ActionController
     # This method allows blocks to be passed directly to the caches_action
     # method. I'm not a fan of the syntax (ie. it's not obvious that the block
     # is for determining whether the action is cached), and I don't like
@@ -32,68 +31,25 @@ module ActionController
     end
   end
   
-  module Caching
-    module Actions
-      class ActionCacheFilter
-        attr_accessor :check
-        
-        # This code allows a block from the caches_action method.
-        # See comments above explaining why it's commented out.
-        #
-        # alias_method :default_initialize, :initialize
-        # 
-        # def initialize(*actions, &block)
-        #   @block = block
-        #   default_initialize(*actions, &block)
-        # end
-        
-        alias_method :default_before, :before
-        
-        # This method, aliased from the default version, will only
-        # attempt to cache if there's an :if parameter supplied
-        # with the caches_action call. The :if value can be either
-        # a Proc or a symbol pointing to an instance method of the
-        # controller.
-        #
-        # ==== Examples
-        # Using a symbol:
-        #
-        #   caches_action :index, :if => :i_can_has_cache?
-        #   # ...
-        #   def i_can_has_cache?
-        #     Time.now.wday == 1 # only cache on Mondays
-        #   end
-        #
-        # Using a Proc:
-        #
-        #   caches_action :index, :if => Proc.new { Time.now.wday == 1 }
-        def before(controller)
-          self.check = (@options[:if] || @block)
-          
-          return default_before(controller) if check?(controller)
-        end
-        
-        alias_method :default_after, :after
-        
-        def after(controller) #:nodoc:
-          return default_after(controller) if check?(controller)
-        end
-        
-        private
-        
-        def check?(controller)
-          case check
-          when nil
-            true
-          when Symbol
-            controller.send(check)
-          when Proc
-            controller.instance_eval(&check)
-          else
-            false
-          end
-        end
-      end
+  module ActionView
+    # This method acts in much the same way as
+    # ActionView::Helpers::CacheHelper.cache - but with the first parameter
+    # acting as a flag to whether it should cache the fragment.
+    #
+    # ==== Examples
+    #
+    #   <% conditional_cache @current_user.nil? do %>
+    #     <!-- view code that will only be cached when @current_user is nil -->
+    #   <% end %>
+    #
+    # Just like the default cache method, it also accepts additional
+    # parameters:
+    #
+    #   <% conditional_cache @current_user.nil?, :page => params[:page] %>
+    #     <!-- view code -->
+    #   <% end %>
+    def conditional_cache(conditional, name = {}, &block)
+      conditional ? @controller.cache_erb_fragment(block, name) : block.call
     end
   end
 end
