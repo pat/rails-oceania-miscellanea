@@ -34,6 +34,7 @@ module ConditionalActionCaching
       #
       #   caches_action :index, :if => Proc.new { Time.now.wday == 1 }
       def before(controller)
+        @options ||= {}
         self.check = (@options[:if] || @block)
         
         return default_before(controller) if check?(controller)
