@@ -34,7 +34,10 @@ module ConditionalActionCaching
       #
       #   caches_action :index, :if => Proc.new { Time.now.wday == 1 }
       def before(controller)
-        @options ||= {}
+        if @options.nil? # @options is only set in edge
+          @options = @actions.last.is_a?(Hash) ? @actions.pop : {}
+        end
+        
         self.check = (@options[:if] || @block)
         
         return default_before(controller) if check?(controller)
@@ -57,7 +60,7 @@ module ConditionalActionCaching
         when Proc
           controller.instance_eval(&check)
         else
-          false
+          raise ArgumentError.new
         end
       end
     end
