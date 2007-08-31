@@ -1,5 +1,5 @@
-require "action_controller_additions"
-require "action_view_additions"
+require "action_caching"
+require "fragment_caching"
 
 ActionView::Helpers::CacheHelper.send(:include,
   ConditionalFragmentCaching::ActionView)
