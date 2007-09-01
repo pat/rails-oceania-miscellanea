@@ -3,6 +3,7 @@ ENV["RAILS_ENV"] = "test"
 require 'fileutils'
 require 'action_controller'
 require 'action_controller/test_process'
+require 'action_view'
 require "action_caching"
 require "fragment_caching"
 
@@ -13,9 +14,23 @@ ActionController::Base.logger = nil
 
 Spec::Runner.configure do |config|
   config.include ActionController::TestProcess
+  
+  config.before :all do
+    FileUtils.mkdir_p(FILE_STORE_PATH)
+  end
+  
+  config.before :each do
+    @request      = ActionController::TestRequest.new
+    @response     = ActionController::TestResponse.new
+    @request.host = 'hostname.com'
+  end
+  
+  config.after :all do
+    FileUtils.rm_r(FILE_STORE_PATH) if File.exists?(FILE_STORE_PATH)
+  end
 end
 
-def have_cache
+def be_cached
   CacheMatcher.new
 end
 
