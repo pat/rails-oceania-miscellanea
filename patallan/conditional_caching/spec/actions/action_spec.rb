@@ -2,56 +2,48 @@ require "spec/spec_helper"
 
 describe "Conditional Action Caching" do
   before :all do
-    FileUtils.mkdir_p(FILE_STORE_PATH)
     ActionController::Routing::Routes.draw do |map|
       map.resources :conditional_actions
     end
   end
   
   before :each do
-    @request      = ActionController::TestRequest.new
-    @response     = ActionController::TestResponse.new
     @controller   = ConditionalActionsController.new
-    @request.host = 'hostname.com'
     @controller.expire_fragment(/hostname.com/)
-  end
-  
-  after :all do
-    FileUtils.rm_r(FILE_STORE_PATH)
   end
   
   it "should cache when there's no condition supplied" do
     get :index
-    @request.should have_cache
+    @request.should be_cached
   end
   
   it "should cache when the condition is set to nil" do
     get :show, :id => 1
-    @request.should have_cache
+    @request.should be_cached
   end
   
   it "should cache when the condition is set to a symbol pointer to a method that returns true" do
     @controller.will_cache = true
     get :new
-    @request.should have_cache
+    @request.should be_cached
   end
   
   it "should not cache when the condition is set to a symbol pointer to a method that returns false" do
     @controller.will_cache = false
     get :new
-    @request.should_not have_cache
+    @request.should_not be_cached
   end
   
   it "should cache when the condition is set to a Proc that returns true" do
     @controller.will_cache = true
     get :edit, :id => 1
-    @request.should have_cache
+    @request.should be_cached
   end
   
   it "should not cache when the condition is set to a Proc that returns false" do
     @controller.will_cache = false
     get :edit, :id => 1
-    @request.should_not have_cache
+    @request.should_not be_cached
   end
   
   it "should raise ArgumentErrors when the condition is not a symbol or Proc" do
