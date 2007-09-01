@@ -43,9 +43,9 @@ describe "Conditional Fragment Caching in the controller" do
   
   it "should return nil from conditional_read_fragment if a fragment exists and the condition is false" do
     @controller.will_cache = false
-    get :show, :id => 1 # create cache
+    get :show, :id => 1 # don't create cache
     @controller.inner_code.should == true
-    get :show, :id => 1 # read cache
+    get :show, :id => 1 # still doesn't create cache
     @controller.inner_code.should == true
   end
 end
