@@ -1,9 +1,10 @@
 module ThinkingSphinx
   class Configuration
     def build(file_path=nil)
+      environment = ENV['RAILS_ENV'] || "development"
       load_models
-      file_path ||= "#{RAILS_ROOT}/config/#{ENV['RAILS_ENV']}.conf"
-      database_conf = YAML.load(File.open("#{RAILS_ROOT}/config/database.yml"))[ENV['RAILS_ENV']]
+      file_path ||= "#{RAILS_ROOT}/config/#{environment}.conf"
+      database_conf = YAML.load(File.open("#{RAILS_ROOT}/config/database.yml"))[environment]
       
       open(file_path, "w") do |file|
         file.write <<-CONFIG
@@ -49,11 +50,11 @@ source #{model.name.downcase}_#{i}
         source_list = sources.collect { |s| "source = #{s}"}.join("\n")
         file.write <<-INDEX
 
-index #{ENV['RAILS_ENV']}
+index #{environment}
 {
   #{source_list}
   morphology = stem_en
-  path = #{RAILS_ROOT}/db/sphinx/#{ENV['RAILS_ENV']}
+  path = #{RAILS_ROOT}/db/sphinx/#{environment}
   charset_type = utf-8
 }
         INDEX
