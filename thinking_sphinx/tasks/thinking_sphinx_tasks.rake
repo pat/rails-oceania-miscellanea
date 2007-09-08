@@ -8,7 +8,7 @@ namespace :thinking_sphinx do
     
     Dir["#{RAILS_ROOT}/db/sphinx/*.spl"].each { |file| File.delete(file) }
     
-    cmd = "searchd --config #{RAILS_ROOT}/config/#{environment}.sphinkx.conf"
+    cmd = "searchd --config #{RAILS_ROOT}/config/#{environment}.sphinx.conf"
     puts cmd
     system cmd
     
