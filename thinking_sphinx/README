@@ -1,0 +1,59 @@
+== Thinking Sphinx
+
+This plugin both generates configurations for Sphinx, and allows searching of the Sphinx indexes. It has been heavily influenced by the Ultrasphinx plugin from Cloudburst, LLC, as well as the Sphinx Client API by Dmytro Shteflyuk and Alexy Kovyrin.
+
+Some of the code will be quite familiar, as much of the learning of how to interact with Sphinx came from those two projects. I've aimed to keep this project distinct where possible, though, and also preferred convention over configuration for much of the settings. (Granted, it's *my* convention, but hopefully it works for others).
+
+At the time of writing, there is very little in the way of documentation or comments, and the search part really needs to be fleshed out. If you want to make use of it, go ahead, but consider yourself warned.
+
+That said, any questions, comments or suggestions can be sent to pat at freelancing-gods dot com.
+
+== Coming Soon
+
+* Ability to concat multiple attributes together as one field in indexes
+* will_paginate support (both in controllers and views)
+* Straight text searching, for when fields aren't important (ie. Post.search("ruby") )
+* Result sorting and grouping
+
+== Examples
+
+=== Configuring indexes for models
+
+This is what prompted me to write this plugin - the ability to use fields from associations that might be several levels deep in the object hierarchy. So, you'll need to put this code (well, something similar) in your model files:
+
+  define_index do |index|
+    # model has an attribute 'name'
+    index.includes.name
+    # model has an association :articles, which has an attribute 'content'
+    index.includes.articles.content
+    # model has an assocation :articles, which has an association :tags, which has an attribute 'name'
+    index.includes.articles.tags.name
+  end
+
+I've written this in a way that hopefully avoids the need to edit sphinx config files. If you find that's not the case, let me know.
+
+=== Starting/Stopping/Indexing Sphinx
+
+The names of the rake tasks are pretty self-explanatory
+
+  rake thinking_sphinx:start
+  rake thinking_sphinx:stop
+  rake thinking_sphinx:restart
+  rake thinking_sphinx:index
+
+These are all accessible via an abbreviated namespace as follows:
+
+  rake ts:start
+  rake ts:stop
+  rake ts:restart
+  rake ts:index
+
+=== Searching
+
+Currently, there's no options, the syntax is extremely basic:
+
+  User.search :name => "Pat"
+
+Ordering and straight text searches will be added, I promise.
+
+Copyright (c) 2007 Pat Allan, released under the MIT license
