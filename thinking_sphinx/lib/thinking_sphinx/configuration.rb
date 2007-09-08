@@ -3,7 +3,7 @@ module ThinkingSphinx
     def build(file_path=nil)
       environment = ENV['RAILS_ENV'] || "development"
       load_models
-      file_path ||= "#{RAILS_ROOT}/config/#{environment}.conf"
+      file_path ||= "#{RAILS_ROOT}/config/#{environment}.sphinx.conf"
       database_conf = YAML.load(File.open("#{RAILS_ROOT}/config/database.yml"))[environment]
       
       open(file_path, "w") do |file|
