@@ -2,12 +2,13 @@ require 'fileutils'
 
 namespace :thinking_sphinx do
   task :start => :environment do
-    FileUtils.mkdir_p "#{RAILS_ROOT}/db/sphinx/#{ENV['RAILS_ENV']}"
+    environment = ENV['RAILS_ENV'] || "development"
+    FileUtils.mkdir_p "#{RAILS_ROOT}/db/sphinx/#{environment}"
     raise RuntimeError, "searchd is already running." if sphinx_running?
     
     Dir["#{RAILS_ROOT}/db/sphinx/*.spl"].each { |file| File.delete(file) }
     
-    cmd = "searchd --config #{RAILS_ROOT}/config/#{ENV['RAILS_ENV']}.conf"
+    cmd = "searchd --config #{RAILS_ROOT}/config/#{environment}.conf"
     puts cmd
     system cmd
     
@@ -34,7 +35,9 @@ namespace :thinking_sphinx do
   end
   
   task :index => [:environment, :configure] do
-    cmd = "indexer --config #{RAILS_ROOT}/config/#{ENV['RAILS_ENV']}.conf --all"
+    environment = ENV['RAILS_ENV'] || "development"
+    FileUtils.mkdir_p "#{RAILS_ROOT}/db/sphinx/#{environment}"
+    cmd = "indexer --config #{RAILS_ROOT}/config/#{environment}.conf --all"
     cmd << " --rotate" if sphinx_running?
     puts cmd
     system cmd
