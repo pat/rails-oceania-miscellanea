@@ -8,7 +8,7 @@ namespace :thinking_sphinx do
     
     Dir["#{RAILS_ROOT}/db/sphinx/*.spl"].each { |file| File.delete(file) }
     
-    cmd = "searchd --config #{RAILS_ROOT}/config/#{environment}.conf"
+    cmd = "searchd --config #{RAILS_ROOT}/config/#{environment}.sphinkx.conf"
     puts cmd
     system cmd
     
@@ -37,7 +37,7 @@ namespace :thinking_sphinx do
   task :index => [:environment, :configure] do
     environment = ENV['RAILS_ENV'] || "development"
     FileUtils.mkdir_p "#{RAILS_ROOT}/db/sphinx/#{environment}"
-    cmd = "indexer --config #{RAILS_ROOT}/config/#{environment}.conf --all"
+    cmd = "indexer --config #{RAILS_ROOT}/config/#{environment}.sphinx.conf --all"
     cmd << " --rotate" if sphinx_running?
     puts cmd
     system cmd
