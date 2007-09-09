@@ -1,8 +1,11 @@
 module ThinkingSphinx
   class Client
+    # Used for querying Sphinx.
     class Filter
       attr_accessor :attribute, :values, :exclude
       
+      # Attribute name, values (which can be an array or a range), and whether
+      # the filter should be exclusive.
       def initialize(attribute, values, exclude)
         @attribute, @values, @exclude = attribute, values, exclude
       end
@@ -11,6 +14,7 @@ module ThinkingSphinx
         self.exclude
       end
       
+      # Returns the message for this filter to send to the Sphinx service
       def query_message
         message = Message.new
         

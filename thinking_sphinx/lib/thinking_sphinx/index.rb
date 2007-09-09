@@ -1,12 +1,17 @@
 module ThinkingSphinx
+  # Represents an index for Sphinx config. Also performs the core part of SQL
+  # query generation - although thankfully ActiveRecord does most of the heavy
+  # lifting. Syntax examples for indexes can be found at ActiveRecord#define_index.
   class Index
     attr_accessor :model, :fields
     
+    # Create a new index, passing in the model it is for.
     def initialize(model)
       @model = model
       @fields = []
     end
     
+    # Add a new field to the index
     def includes(*args)
       if args.empty?
         @fields << Field.new(self)
@@ -17,6 +22,10 @@ module ThinkingSphinx
       args.length == 1 ? @fields.last : self
     end
     
+    # This method grabs all the fields, combines all their associations, and
+    # generates usable SQL for the Sphinx configuration file. It makes heavy
+    # use of ActiveRecord's Join SQL code - thankfully saving me from going
+    # insane.
     def to_sql
       associations = {}
       @fields.each { |field| associations[field.unique_name] = field.associations }
@@ -39,27 +48,19 @@ module ThinkingSphinx
         field.prefix = field.associations.empty? ? @model.table_name : joins.last.aliased_table_name
       end
       
-      join_statement = joins.collect { |join| join.association_join }.join(" ")
-      
-      field_select = @fields.collect { |field|
-        if field.many?
-          "CAST(GROUP_CONCAT(#{field.prefix}.#{field.column} SEPARATOR ' ') AS CHAR) AS #{field.unique_name}"
-        else
-          "CAST(#{field.prefix}.#{field.column} AS CHAR) AS #{field.unique_name}"
-        end
-      }.join(", ")
-      
-      group_statement = (["#{@model.table_name}.#{@model.primary_key}"] + fields.select { |field|
-        !field.many?
-      }.collect { |field| "#{field.prefix}.#{field.column}" }).uniq.join(", ")
+      join_statement  = joins.collect { |join| join.association_join }.join(" ")
+      field_select    = @fields.collect { |field| field.select_clause }.join(", ")
+      group_statement = @fields.collect { |field| field.group_clause }.flatten.compact.uniq.join(", ")
       
       "SELECT #{@model.table_name}.#{@model.primary_key}, '#{@model}' AS class, #{field_select} FROM #{@model.table_name} #{join_statement} WHERE #{@model.table_name}.#{@model.primary_key} >= $start AND #{@model.table_name}.#{@model.primary_key} <= $end GROUP BY #{group_statement}"
     end
     
+    # Simple helper method for the query info SQL
     def sql_query_info
       "SELECT * FROM #{@model.table_name} WHERE #{@model.primary_key} = $id"
     end
     
+    # Simple helper method for the query range SQL
     def sql_query_range
       "SELECT MIN(#{@model.primary_key}), MAX(#{@model.primary_key}) FROM #{@model.table_name}"
     end

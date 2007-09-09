@@ -1,5 +1,20 @@
 module ThinkingSphinx
   class Configuration
+    # Generate the config file for Sphinx. This has the following settings,
+    # relative to RAILS_ROOT where relevant:
+    #
+    # config file path:: config/#{environment}.sphinx.conf
+    # searchd log file:: log/searchd.log
+    # query log file::   log/searchd.query.log
+    # pid file::         log/searchd.pid
+    # searchd files::    db/sphinx/#{environment}.*
+    # address::          0.0.0.0 (all)
+    # port::             3312
+    #
+    # At this point, if you want to change these settings, bad luck. That may
+    # change in the future, though (but if you really want it, request it! Or
+    # submit a patch).
+    #
     def build(file_path=nil)
       environment = ENV['RAILS_ENV'] || "development"
       load_models
@@ -39,7 +54,6 @@ source #{model.name.downcase}_#{i}
 
   sql_query        = #{index.to_sql}
   sql_query_range  = #{index.sql_query_range}
-  sql_group_column = class
   sql_query_info   = #{index.sql_query_info}
 }
             SOURCE
