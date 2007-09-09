@@ -4,6 +4,15 @@ module ThinkingSphinx
   class VersionError < StandardError;  end
   class ResponseError < StandardError; end
   
+  # This class was heavily based on the existing Client API by Dmytro Shteflyuk
+  # and Alexy Kovyrin. Their code worked fine, I just wanted something a bit
+  # more Ruby-ish (ie. lowercase and underscored method names). I also have
+  # used a few helper classes, just to neaten things up.
+  #
+  # I do plan to release this part of the plugin as a standalone library at
+  # some point - if you're interested in using it, and are feeling impatient,
+  # feel free to hassle me.
+  #
   class Client
     Commands = {
       :search  => 0, # SEARCHD_COMMAND_SEARCH
@@ -56,6 +65,9 @@ module ThinkingSphinx
     attr_accessor :server, :port, :offset, :limit, :max_matches,
       :match_mode, :sort_mode, :sort_by, :weights, :id_range, :filters
     
+    # Can instantiate with a specific server and port - otherwise it assumes
+    # defaults of localhost and 3312 respectively. All other settings can be
+    # accessed and changed via the attribute accessors.
     def initialize(server=nil, port=nil)
       @server = server || "localhost"
       @port   = port   || 3312
@@ -75,6 +87,9 @@ module ThinkingSphinx
       @group_clause   = '@group desc'
     end
     
+    # Query the Sphinx daemon - defaulting to all indexes, but you can specify
+    # a specific one if you wish. The search parameter should be a string
+    # following Sphinx's expectations.
     def query(search, index = '*')      
       response = Response.new request(:search, query_message(search, index))
       
@@ -123,6 +138,19 @@ module ThinkingSphinx
       result
     end
     
+    # Grab excerpts from the indexes. As part of the options, you will need to
+    # define:
+    # * :docs
+    # * :words
+    #
+    # Optional settings include:
+    # * :index (defaults to all indexes)
+    # * :before_match (defaults to <span class="match">)
+    # * :after_match (defaults to </span>)
+    # * :chunk_separator (defaults to ' &#8230; ' - which is an HTML ellipsis)
+    # * :limit (defaults to 256)
+    # * :around (defaults to 5)
+    #
     def excerpts(options = {})
       options[:index]           ||= '*'
       options[:before_match]    ||= '<span class="match">'
@@ -136,13 +164,16 @@ module ThinkingSphinx
       options[:docs].collect { |doc| response.next }
     end
     
-    # Updates are pre-alpha in sphinx
-    # def update(index, attributes, values)
-    #   #
-    # end
+    # Updates are pre-alpha in Sphinx, so I'm not supporting that functionality
+    # just yet. This method returns nil.
+    def update(index, attributes, values)
+      nil
+    end
     
     private
     
+    # Connects to the Sphinx daemon, and yields a socket to use. The socket is
+    # closed at the end of the block.
     def connect(&block)
       socket = TCPSocket.new @server, @port
       
@@ -161,6 +192,8 @@ module ThinkingSphinx
       end
     end
     
+    # Send a specific message, for a command type (eg, search, excerpts,
+    # update), to the Sphinx daemon.
     def request(command, message)
       response = ""
       status   = -1
@@ -194,6 +227,7 @@ module ThinkingSphinx
       end
     end
     
+    # Generation of the message to send to Sphinx for a search.
     def query_message(search, index)
       message = Message.new
       
@@ -225,6 +259,7 @@ module ThinkingSphinx
       message.append_string @group_clause
     end
     
+    # Generation of the message to send to Sphinx for an excerpts request.
     def excerpts_message(options)
       message = Message.new
       

@@ -48,6 +48,7 @@ namespace :ts do
   task :start   => "thinking_sphinx:start"
   task :stop    => "thinking_sphinx:stop"
   task :in      => "thinking_sphinx:index"
+  task :index   => "thinking_sphinx:index"
   task :restart => "thinking_sphinx:restart"
 end
 

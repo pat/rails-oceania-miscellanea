@@ -10,10 +10,15 @@ That said, any questions, comments or suggestions can be sent to pat at freelanc
 
 == Coming Soon
 
-* Ability to concat multiple attributes together as one field in indexes
 * will_paginate support (both in controllers and views)
 * Straight text searching, for when fields aren't important (ie. Post.search("ruby") )
 * Result sorting and grouping
+
+== Installation
+
+Nothing too tricky, just the usual plugin installation routine:
+
+  script/plugin install http://rails-oceania.googlecode.com/svn/patallan/thinking_sphinx
 
 == Examples
 
@@ -26,8 +31,10 @@ This is what prompted me to write this plugin - the ability to use fields from a
     index.includes.name
     # model has an association :articles, which has an attribute 'content'
     index.includes.articles.content
-    # model has an assocation :articles, which has an association :tags, which has an attribute 'name'
+    # model has an association :articles, which has an association :tags, which has an attribute 'name'
     index.includes.articles.tags.name
+    # model has an association :author, which has attributes 'first_name' and 'last_name'
+    index.includes.author(:first_name, :last_name).as.author
   end
 
 I've written this in a way that hopefully avoids the need to edit sphinx config files. If you find that's not the case, let me know.
