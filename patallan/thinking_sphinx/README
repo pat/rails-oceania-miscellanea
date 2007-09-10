@@ -4,7 +4,7 @@ This plugin both generates configurations for Sphinx, and allows searching of th
 
 Some of the code will be quite familiar, as much of the learning of how to interact with Sphinx came from those two projects. I've aimed to keep this project distinct where possible, though, and also preferred convention over configuration for much of the settings. (Granted, it's *my* convention, but hopefully it works for others).
 
-At the time of writing, there is very little in the way of documentation or comments, and the search part really needs to be fleshed out. If you want to make use of it, go ahead, but consider yourself warned.
+At the time of writing, the search part really needs to be fleshed out, and perhaps a bit more in the way of documentation is needed. If you want to make use of it, go ahead, but consider yourself warned.
 
 That said, any questions, comments or suggestions can be sent to pat at freelancing-gods dot com.
 
