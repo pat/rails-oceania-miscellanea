@@ -43,14 +43,10 @@ module ThinkingSphinx
             @indexes.last
           end
           
-          # Searches for results that match the parameters provided. These
-          # parameter keys should match the names of fields in the indexes.
+          # Searches for results that match the parameters provided. Will only
+          # return the ids for the matching objects.
           #
-          # Example:
-          #
-          #   Invoice.find :customer => "Pat"
-          #
-          def search(params={})
+          def search_for_ids(params={})
             search_string = params.merge(:class => self.name).select { |key,value|
               !value.blank?
             }.collect { |key,value|
@@ -60,8 +56,18 @@ module ThinkingSphinx
             sphinx = ThinkingSphinx::Client.new
             sphinx.match_mode = :extended
             
-            result = sphinx.query(search_string)
-            result[:matches].collect { |id,value|
+            sphinx.query(search_string)[:matches]
+          end
+          
+          # Searches for results that match the parameters provided. These
+          # parameter keys should match the names of fields in the indexes.
+          #
+          # Example:
+          #
+          #   Invoice.find :customer => "Pat"
+          #
+          def search(params={})
+            search_for_ids(params).collect { |id,value|
               find id
             }
           end
