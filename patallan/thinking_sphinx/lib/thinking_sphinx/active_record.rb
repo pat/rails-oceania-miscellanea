@@ -42,32 +42,41 @@ module ThinkingSphinx
             ThinkingSphinx.indexed_models << self
             @indexes.last
           end
-          
+
           # Searches for results that match the parameters provided. Will only
-          # return the ids for the matching objects.
+          # return the ids for the matching objects. See #search for syntax
+          # examples.
           #
-          def search_for_ids(params={})
-            search_string = params.merge(:class => self.name).select { |key,value|
-              !value.blank?
-            }.collect { |key,value|
-              "@#{key} #{value}"
-            }.join(" & ")
+          def search_for_ids(*args)
+            case args.first
+            when String
+              str     = args[0]
+              options = args[1] || {}
+            when Hash
+              options = args[0]
+              str     = options[:conditions]
+            end
+            
+            str = str.merge(:class => self.name).collect { |key,value|
+              value.blank? ? nil : "@#{key} #{value}"
+            }.compact.uniq.join(" ") if str.is_a?(Hash)
             
             sphinx = ThinkingSphinx::Client.new
-            sphinx.match_mode = :extended
+            sphinx.match_mode = options[:match_mode] || :extended
             
-            sphinx.query(search_string)[:matches]
+            sphinx.query(str, self.name.downcase)[:matches]
           end
           
           # Searches for results that match the parameters provided. These
           # parameter keys should match the names of fields in the indexes.
           #
-          # Example:
+          # Examples:
           #
-          #   Invoice.find :customer => "Pat"
+          #   Invoice.find :conditions => {:customer => "Pat"}
+          #   Invoice.find "Pat" # search all fields
           #
-          def search(params={})
-            search_for_ids(params).collect { |id,value|
+          def search(*args)
+            search_for_ids(*args).collect { |id,value|
               find id
             }
           end

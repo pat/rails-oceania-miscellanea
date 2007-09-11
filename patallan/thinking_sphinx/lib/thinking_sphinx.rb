@@ -58,11 +58,11 @@ require 'thinking_sphinx/index'
 # As for searching, again quite simple (perhaps too simple - it needs some
 # flexibility):
 #
-#   Invoice.search :customer_name => "Pat"
+#   Invoice.search :conditions => {:customer_name => "Pat"}
+#   Invoice.search "Pat"
 #
-# There is not yet any support for straight text searching - but that's a high
-# priority on the list of upcoming features. Also on that list is the ability
-# for custom sorting and grouping.
+# On the list of upcoming features is the ability for custom sorting and
+# grouping.
 #
 module ThinkingSphinx
   def self.indexed_models

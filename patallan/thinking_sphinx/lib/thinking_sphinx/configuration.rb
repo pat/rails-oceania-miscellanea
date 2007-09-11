@@ -7,7 +7,7 @@ module ThinkingSphinx
     # searchd log file:: log/searchd.log
     # query log file::   log/searchd.query.log
     # pid file::         log/searchd.pid
-    # searchd files::    db/sphinx/#{environment}.*
+    # searchd files::    db/sphinx/#{environment}/{model_name}.*
     # address::          0.0.0.0 (all)
     # port::             3312
     #
@@ -39,8 +39,9 @@ searchd
 }
         CONFIG
         
-        sources = []
         ThinkingSphinx.indexed_models.each do |model|
+          sources = []
+          
           model.indexes.each_with_index do |index, i|
             file.write <<-SOURCE
 
@@ -59,19 +60,19 @@ source #{model.name.downcase}_#{i}
             SOURCE
             sources << "#{model.name.downcase}_#{i}"
           end
-        end
-        
-        source_list = sources.collect { |s| "source = #{s}"}.join("\n")
-        file.write <<-INDEX
+          
+          source_list = sources.collect { |s| "source = #{s}"}.join("\n")
+          file.write <<-INDEX
 
-index #{environment}
+index #{model.name.downcase}
 {
   #{source_list}
   morphology = stem_en
-  path = #{RAILS_ROOT}/db/sphinx/#{environment}
+  path = #{RAILS_ROOT}/db/sphinx/#{environment}/#{model.name.downcase}
   charset_type = utf-8
 }
-        INDEX
+          INDEX
+        end
       end
     end
     
