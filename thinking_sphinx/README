@@ -11,7 +11,6 @@ That said, any questions, comments or suggestions can be sent to pat at freelanc
 == Coming Soon
 
 * will_paginate support (both in controllers and views)
-* Straight text searching, for when fields aren't important (ie. Post.search("ruby") )
 * Result sorting and grouping
 
 == Installation
@@ -57,10 +56,11 @@ These are all accessible via an abbreviated namespace as follows:
 
 === Searching
 
-Currently, there's no options, the syntax is extremely basic:
+Currently, there's two ways of searching - conditions hash, or straight text:
 
-  User.search :name => "Pat"
+  User.search :conditions => {:name => "Pat"}
+  User.search "Pat" # looks at all fields
 
-Ordering and straight text searches will be added, I promise.
+Ordering will be added, I promise.
 
 Copyright (c) 2007 Pat Allan, released under the MIT license
