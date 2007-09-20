@@ -13,15 +13,10 @@ module ThinkingSphinx
     
     # Add a new field to the index
     def includes(*args)
-      if args.empty?
-        @fields << Field.new(self)
-        return @fields.last
-      end
-      
-      args.each { |arg| @fields << Field.new(self, arg) }
-      args.length == 1 ? @fields.last : self
+      @fields << Field.new(self, args.empty? ? nil : args)
+      @fields.last
     end
-    
+        
     # This method grabs all the fields, combines all their associations, and
     # generates usable SQL for the Sphinx configuration file. It makes heavy
     # use of ActiveRecord's Join SQL code - thankfully saving me from going
