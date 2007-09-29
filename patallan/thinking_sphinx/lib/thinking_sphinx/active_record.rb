@@ -60,20 +60,20 @@ module ThinkingSphinx
             str = str.merge(:class => self.name).collect { |key,value|
               value.blank? ? nil : "@#{key} #{value}"
             }.compact.uniq.join(" ") if str.is_a?(Hash)
-            page = (options[:page].to_i || 1)
+            page = options[:page].nil? ? 1 : options[:page].to_i
             
-            sphinx = ThinkingSphinx::Client.new
+            sphinx            = ThinkingSphinx::Client.new
             sphinx.match_mode = options[:match_mode] || :extended
-            sphinx.limit      = options[:limit].to_i
+            sphinx.limit      = options[:limit].nil? ? sphinx.limit : options[:limit].to_i
             sphinx.offset     = (page - 1) * sphinx.limit
             results           = sphinx.query(str, self.name.downcase)
             
-            if const_defined?("WillPaginate")
+            begin
               pager = WillPaginate::Collection.new(page,
                 sphinx.limit, results[:total_found])
-              pager.replace results
-            else
-              results[:matches]
+              pager.replace results[:matches].keys
+            rescue
+              results[:matches].keys
             end
           end
           
@@ -86,7 +86,8 @@ module ThinkingSphinx
           #   Invoice.find "Pat" # search all fields
           #
           def search(*args)
-            search_for_ids(*args).collect { |id,value|
+            ids = search_for_ids(*args)
+            ids.replace ids.collect { |id|
               find id
             }
           end
