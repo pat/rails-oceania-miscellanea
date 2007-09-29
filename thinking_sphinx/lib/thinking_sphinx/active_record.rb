@@ -60,11 +60,21 @@ module ThinkingSphinx
             str = str.merge(:class => self.name).collect { |key,value|
               value.blank? ? nil : "@#{key} #{value}"
             }.compact.uniq.join(" ") if str.is_a?(Hash)
+            page = (options[:page].to_i || 1)
             
             sphinx = ThinkingSphinx::Client.new
             sphinx.match_mode = options[:match_mode] || :extended
+            sphinx.limit      = options[:limit].to_i
+            sphinx.offset     = (page - 1) * sphinx.limit
+            results           = sphinx.query(str, self.name.downcase)
             
-            sphinx.query(str, self.name.downcase)[:matches]
+            if const_defined?("WillPaginate")
+              pager = WillPaginate::Collection.new(page,
+                sphinx.limit, results[:total_found])
+              pager.replace results
+            else
+              results[:matches]
+            end
           end
           
           # Searches for results that match the parameters provided. These

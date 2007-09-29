@@ -74,7 +74,7 @@ module ThinkingSphinx
       
       # defaults
       @offset         = 0
-      @limit          = 20
+      @limit          = 30
       @max_matches    = 1000
       @match_mode     = :all
       @sort_mode      = :relevance
