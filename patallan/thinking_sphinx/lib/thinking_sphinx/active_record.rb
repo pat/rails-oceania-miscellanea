@@ -82,8 +82,9 @@ module ThinkingSphinx
           #
           # Examples:
           #
-          #   Invoice.find :conditions => {:customer => "Pat"}
-          #   Invoice.find "Pat" # search all fields
+          #   Invoice.search :conditions => {:customer => "Pat"}
+          #   Invoice.search "Pat" # search all fields
+          #   Invoice.search "Pat", :page => (params[:page] || 1)
           #
           def search(*args)
             ids = search_for_ids(*args)
