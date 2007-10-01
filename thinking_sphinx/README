@@ -10,7 +10,6 @@ That said, any questions, comments or suggestions can be sent to pat at freelanc
 
 == Coming Soon
 
-* will_paginate support (both in controllers and views)
 * Result sorting and grouping
 
 == Installation
@@ -60,7 +59,8 @@ Currently, there's two ways of searching - conditions hash, or straight text:
 
   User.search :conditions => {:name => "Pat"}
   User.search "Pat" # looks at all fields
+  User.search "Pat", :page => (params[:page] || 1)
 
-Ordering will be added, I promise.
+Pagination is done by default - just pass through a :page parameter to access a page beyond the first. If the will_paginate plugin is also installed, you can use their helper with the results returned by the search call.
 
 Copyright (c) 2007 Pat Allan, released under the MIT license

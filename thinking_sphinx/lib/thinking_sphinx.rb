@@ -55,11 +55,17 @@ require 'thinking_sphinx/index'
 #   rake ts:index (or even ts:in)
 #   rake ts:restart
 #
-# As for searching, again quite simple (perhaps too simple - it needs some
-# flexibility):
+# As for searching, again quite simple:
 #
 #   Invoice.search :conditions => {:customer_name => "Pat"}
 #   Invoice.search "Pat"
+#
+# For pagination, just pass in the :page parameter:
+#
+#   Invoice.search "Pat", :page => (params[:page] || 1)
+#
+# The results returned by that call can be used by the will_paginate view
+# helper from the plugin of the same name (if installed).
 #
 # On the list of upcoming features is the ability for custom sorting and
 # grouping.
