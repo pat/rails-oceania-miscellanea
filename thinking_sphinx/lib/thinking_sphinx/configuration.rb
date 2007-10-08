@@ -1,24 +1,45 @@
 module ThinkingSphinx
   class Configuration
-    # Generate the config file for Sphinx. This has the following settings,
-    # relative to RAILS_ROOT where relevant:
+    attr_accessor :config_file, :searchd_log_file, :query_log_file,
+      :pid_file, :searchd_file_path, :address, :port
+    attr_reader :environment
+    
+    def initialize
+      @environment = ENV['RAILS_ENV'] || "development"
+      
+      self.config_file       = "#{RAILS_ROOT}/config/#{environment}.sphinx.conf"
+      self.searchd_log_file  = "#{RAILS_ROOT}/log/searchd.log"
+      self.query_log_file    = "#{RAILS_ROOT}/log/searchd.query.log"
+      self.pid_file          = "#{RAILS_ROOT}/log/searchd.pid"
+      self.searchd_file_path = "#{RAILS_ROOT}/db/sphinx/#{environment}/"
+      self.port              = 3312
+      
+      parse_config
+    end
+    
+    # Generate the config file for Sphinx. This has the following default
+    # settings, relative to RAILS_ROOT where relevant:
     #
-    # config file path:: config/#{environment}.sphinx.conf
+    # config file::      config/#{environment}.sphinx.conf
     # searchd log file:: log/searchd.log
     # query log file::   log/searchd.query.log
     # pid file::         log/searchd.pid
-    # searchd files::    db/sphinx/#{environment}/{model_name}.*
+    # searchd files::    db/sphinx/#{environment}/
     # address::          0.0.0.0 (all)
     # port::             3312
     #
-    # At this point, if you want to change these settings, bad luck. That may
-    # change in the future, though (but if you really want it, request it! Or
-    # submit a patch).
+    # If you want to change these settings, create a YAML file at
+    # config/sphinx.yml with settings for each environment, in a similar
+    # fashion to database.yml - using the following keys: config_file,
+    # searchd_log_file, query_log_file, pid_file,
+    # searchd_file_path, port.
+    # 
+    # Each setting is optional, so only add the ones you want to change from
+    # the defaults.
     #
     def build(file_path=nil)
-      environment = ENV['RAILS_ENV'] || "development"
       load_models
-      file_path ||= "#{RAILS_ROOT}/config/#{environment}.sphinx.conf"
+      file_path ||= "#{self.config_file_path}/#{self.environment}.sphinx.conf"
       database_conf = YAML.load(File.open("#{RAILS_ROOT}/config/database.yml"))[environment]
       
       open(file_path, "w") do |file|
@@ -30,12 +51,12 @@ indexer
 
 searchd
 {
-  port = 3312
-  log = #{RAILS_ROOT}/log/searchd.log
-  query_log = #{RAILS_ROOT}/log/searchd.query.log
+  port = #{self.port}
+  log = #{self.searchd_log_file}
+  query_log = #{self.query_log_file}
   read_timeout = 5
   max_children = 30
-  pid_file = #{RAILS_ROOT}/log/searchd.pid
+  pid_file = #{self.pid_file}
 }
         CONFIG
         
@@ -68,7 +89,7 @@ index #{model.name.downcase}
 {
   #{source_list}
   morphology = stem_en
-  path = #{RAILS_ROOT}/db/sphinx/#{environment}/#{model.name.downcase}
+  path = #{self.searchd_file_path}/#{environment}/#{model.name.downcase}
   charset_type = utf-8
 }
           INDEX
@@ -88,6 +109,17 @@ index #{model.name.downcase}
         rescue NameError
           next
         end
+      end
+    end
+    
+    def parse_config
+      path = "#{RAILS_ROOT}/config/sphinx.yml"
+      return unless File.exists?(path)
+      
+      conf = YAML.load(File.open(path))[environment]
+      
+      conf.each do |key,value|
+        self.send("#{key}=", value) if self.methods.include?("#{key}=")
       end
     end
   end

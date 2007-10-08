@@ -62,7 +62,9 @@ module ThinkingSphinx
             }.compact.uniq.join(" ") if str.is_a?(Hash)
             page = options[:page].nil? ? 1 : options[:page].to_i
             
+            configuration     = ThinkingSphinx::Configuration.new
             sphinx            = ThinkingSphinx::Client.new
+            sphinx.port       = configuration.port
             sphinx.match_mode = options[:match_mode] || :extended
             sphinx.limit      = options[:limit].nil? ? sphinx.limit : options[:limit].to_i
             sphinx.offset     = (page - 1) * sphinx.limit
