@@ -2,7 +2,7 @@
 
 This plugin both generates configurations for Sphinx, and allows searching of the Sphinx indexes. It has been heavily influenced by the Ultrasphinx plugin from Cloudburst, LLC, as well as the Sphinx Client API by Dmytro Shteflyuk and Alexy Kovyrin.
 
-Some of the code will be quite familiar, as much of the learning of how to interact with Sphinx came from those two projects. I've aimed to keep this project distinct where possible, though, and also preferred convention over configuration for much of the settings. (Granted, it's *my* convention, but hopefully it works for others).
+Some of the code will be quite familiar, as much of the learning of how to interact with Sphinx came from those two projects. I've aimed to keep this project distinct where possible, though, and also preferred convention over configuration for much of the settings. (Granted, it's *my* convention, but hopefully it works for others). For custom settings in configuration, just add values to config/sphinx.yml for each environment (see Configuration#build[link:classes/ThinkingSphinx/Configuration.html] for more details).
 
 At the time of writing, the search part really needs to be fleshed out, and perhaps a bit more in the way of documentation is needed. If you want to make use of it, go ahead, but consider yourself warned.
 
