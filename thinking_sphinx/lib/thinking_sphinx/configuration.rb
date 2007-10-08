@@ -39,7 +39,7 @@ module ThinkingSphinx
     #
     def build(file_path=nil)
       load_models
-      file_path ||= "#{self.config_file_path}/#{self.environment}.sphinx.conf"
+      file_path ||= "#{self.config_file}"
       database_conf = YAML.load(File.open("#{RAILS_ROOT}/config/database.yml"))[environment]
       
       open(file_path, "w") do |file|
@@ -89,7 +89,7 @@ index #{model.name.downcase}
 {
   #{source_list}
   morphology = stem_en
-  path = #{self.searchd_file_path}/#{environment}/#{model.name.downcase}
+  path = #{self.searchd_file_path}/#{model.name.downcase}
   charset_type = utf-8
 }
           INDEX
