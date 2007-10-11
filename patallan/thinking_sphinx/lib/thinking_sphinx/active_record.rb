@@ -82,6 +82,10 @@ module ThinkingSphinx
           # Searches for results that match the parameters provided. These
           # parameter keys should match the names of fields in the indexes.
           #
+          # This will use WillPaginate for results if the plugin is installed.
+          # The same parameters - :page and :per_page - work as expected, and
+          # the returned result set can be used by the will_paginate helper.
+          #
           # Examples:
           #
           #   Invoice.search :conditions => {:customer => "Pat"}
