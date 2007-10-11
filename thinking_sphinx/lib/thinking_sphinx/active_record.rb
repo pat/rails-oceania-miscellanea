@@ -66,7 +66,7 @@ module ThinkingSphinx
             sphinx            = ThinkingSphinx::Client.new
             sphinx.port       = configuration.port
             sphinx.match_mode = options[:match_mode] || :extended
-            sphinx.limit      = options[:limit].nil? ? sphinx.limit : options[:limit].to_i
+            sphinx.limit      = options[:per_page].nil? ? sphinx.limit : options[:per_page].to_i
             sphinx.offset     = (page - 1) * sphinx.limit
             results           = sphinx.query(str, self.name.downcase)
             
