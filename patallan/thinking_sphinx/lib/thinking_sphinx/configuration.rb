@@ -87,17 +87,6 @@ source #{model.name.downcase}_#{i}
 }
             SOURCE
             sources << "#{model.name.downcase}_#{i}"
-            infixed_fields << index.fields.select { |field|
-              field.with_infixes
-            }.collect { |field|
-              field.unique_name
-            }
-            
-            prefixed_fields << index.fields.select { |field|
-              field.with_prefixes
-            }.collect { |field|
-              field.unique_name
-            }
           end
           
           source_list = sources.collect { |s| "source = #{s}"}.join("\n")
@@ -112,9 +101,9 @@ index #{model.name.downcase}
   INDEX
           if self.allow_star
             file.write <<-INDEX
-  enable_star   = 1
-  prefix_fields = #{ prefixed_fields.flatten.join(", ") }
-  infix_fields  = #{ infix_fields.flatten.join(", ") }
+  enable_star    = 1
+  min_prefix_len = 1
+  min_infix_len  = 1
             INDEX
           end
           
