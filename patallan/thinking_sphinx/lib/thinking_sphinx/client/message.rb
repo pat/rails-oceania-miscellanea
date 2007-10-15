@@ -24,9 +24,17 @@ module ThinkingSphinx
         @message << [int].pack('N')
       end
       
+      def append_float(float)
+        @message << [float].pack('f')
+      end
+      
       # Append multiple integers
       def append_ints(*ints)
         ints.each { |int| append_int(int) }
+      end
+      
+      def append_floats(*floats)
+        floats.each { |float| append_float(float) }
       end
       
       # Append an array of strings - first appends the length of the array,

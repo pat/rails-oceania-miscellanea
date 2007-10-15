@@ -1,4 +1,4 @@
-require 'thinking_sphinx/client/filter'
+# require 'thinking_sphinx/client/filter'
 
 module ThinkingSphinx
   class VersionError < StandardError;  end
@@ -50,20 +50,32 @@ module ThinkingSphinx
     }
     
     AttributeTypes = {
-      :integer   => 1, # SPH_ATTR_INTEGER
-      :timestamp => 2  # SPH_ATTR_TIMESTAMP
+      :integer    => 1, # SPH_ATTR_INTEGER
+      :timestamp  => 2, # SPH_ATTR_TIMESTAMP
+      :ordinal    => 3, # SPH_ATTR_ORDINAL
+      :bool       => 4, # SPH_ATTR_BOOL
+      :float      => 5, # SPH_ATTR_FLOAT
+      :multi      => 0x40000000 # SPH_ATTR_MULTI
     }
     
     GroupFunctions = {
-      :day   => 0, # SPH_GROUPBY_DAY
-      :week  => 1, # SPH_GROUPBY_WEEK
-      :month => 2, # SPH_GROUPBY_MONTH
-      :year  => 3, # SPH_GROUPBY_YEAR
-      :attr  => 4  # SPH_GROUPBY_ATTR
+      :day      => 0, # SPH_GROUPBY_DAY
+      :week     => 1, # SPH_GROUPBY_WEEK
+      :month    => 2, # SPH_GROUPBY_MONTH
+      :year     => 3, # SPH_GROUPBY_YEAR
+      :attr     => 4, # SPH_GROUPBY_ATTR
+      :attrpair => 5  # SPH_GROUPBY_ATTRPAIR
+    }
+    
+    FilterTypes = {
+      :values       => 0, # SPH_FILTER_VALUES
+      :range        => 1, # SPH_FILTER_RANGE
+      :float_range  => 2  # SPH_FILTER_FLOATRANGE
     }
     
     attr_accessor :server, :port, :offset, :limit, :max_matches,
-      :match_mode, :sort_mode, :sort_by, :weights, :id_range, :filters
+      :match_mode, :sort_mode, :sort_by, :weights, :id_range, :filters,
+      :group_by, :group_function, :group_clause
     
     # Can instantiate with a specific server and port - otherwise it assumes
     # defaults of localhost and 3312 respectively. All other settings can be
@@ -74,7 +86,7 @@ module ThinkingSphinx
       
       # defaults
       @offset         = 0
-      @limit          = 30
+      @limit          = 20
       @max_matches    = 1000
       @match_mode     = :all
       @sort_mode      = :relevance
@@ -94,7 +106,7 @@ module ThinkingSphinx
       response = Response.new request(:search, query_message(search, index))
       
       result = {
-        :matches         => {},
+        :matches         => [],
         :fields          => [],
         :attributes      => {},
         :attribute_names => [],
@@ -117,9 +129,9 @@ module ThinkingSphinx
         doc    = response.next_int
         weight = response.next_int
         
-        result[:matches][doc] = {:weight => weight, :index => i, :attributes => {}}
+        result[:matches] << {:doc => doc, :weight => weight, :index => i, :attributes => {}}
         result[:attribute_names].each do |attr|
-          result[:matches][doc][:attributes][attr] = response.next_int
+          result[:matches].last[:attributes][attr] = response.next_int
         end
       end
       
@@ -159,7 +171,7 @@ module ThinkingSphinx
       options[:limit]           ||= 256
       options[:around]          ||= 5
       
-      response = Response.new request(:excerpts, excerpts_message(options))
+      response = Response.new request(:excerpt, excerpts_message(options))
       
       options[:docs].collect { |doc| response.next }
     end

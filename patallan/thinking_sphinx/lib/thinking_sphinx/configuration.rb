@@ -1,7 +1,7 @@
 module ThinkingSphinx
   class Configuration
     attr_accessor :config_file, :searchd_log_file, :query_log_file,
-      :pid_file, :searchd_file_path, :address, :port
+      :pid_file, :searchd_file_path, :address, :port, :allow_star
     attr_reader :environment
     
     def initialize
@@ -13,6 +13,7 @@ module ThinkingSphinx
       self.pid_file          = "#{RAILS_ROOT}/log/searchd.pid"
       self.searchd_file_path = "#{RAILS_ROOT}/db/sphinx/#{environment}/"
       self.port              = 3312
+      self.allow_star        = false
       
       parse_config
     end
@@ -27,15 +28,19 @@ module ThinkingSphinx
     # searchd files::    db/sphinx/#{environment}/
     # address::          0.0.0.0 (all)
     # port::             3312
+    # allow star::       false
     #
     # If you want to change these settings, create a YAML file at
     # config/sphinx.yml with settings for each environment, in a similar
     # fashion to database.yml - using the following keys: config_file,
     # searchd_log_file, query_log_file, pid_file,
-    # searchd_file_path, port.
+    # searchd_file_path, port, allow_star.
     # 
     # Each setting is optional, so only add the ones you want to change from
     # the defaults.
+    #
+    # Note: allow_star should not be set to true unless using sphinx 0.9.8 r871
+    # or later.
     #
     def build(file_path=nil)
       load_models
@@ -91,6 +96,7 @@ index #{model.name.downcase}
   morphology = stem_en
   path = #{self.searchd_file_path}/#{model.name.downcase}
   charset_type = utf-8
+  #{ self.allow_star ? "enable_star = 1" : "" }
 }
           INDEX
         end
