@@ -2,19 +2,31 @@ module ThinkingSphinx
   # Represents a field within an index. Handles some of the magic around the
   # associations chaining.
   class Field
-    attr_accessor :index, :column, :associations, :prefix
+    attr_accessor :index, :column, :associations, :prefix, :with_prefixes, :with_infixes
     
     # Pass in the index this field is tied to, as well as the column name (if
     # there is one at this point).
     def initialize(index, column=nil)
       @index, @column = index, column
-      @associations = []
-      @expecting_as = false
+      @associations   = []
+      @expecting_as   = false
+      @with_prefixes  = false
+      @with_infixes   = false
     end
     
     # Mark this field as expecting an alias
     def as(as=nil)
       as.nil? ? @expecting_as = true : @as = as
+      self
+    end
+    
+    def with_prefixes
+      @with_prefixes = true
+      self
+    end
+    
+    def with_infixes
+      @with_infixes = true
       self
     end
     
