@@ -66,7 +66,9 @@ searchd
         CONFIG
         
         ThinkingSphinx.indexed_models.each do |model|
-          sources = []
+          sources         = []
+          prefixed_fields = []
+          infixed_fields  = []
           
           model.indexes.each_with_index do |index, i|
             file.write <<-SOURCE
@@ -85,6 +87,17 @@ source #{model.name.downcase}_#{i}
 }
             SOURCE
             sources << "#{model.name.downcase}_#{i}"
+            infixed_fields << index.fields.select { |field|
+              field.with_infixes
+            }.collect { |field|
+              field.unique_name
+            }
+            
+            prefixed_fields << index.fields.select { |field|
+              field.with_prefixes
+            }.collect { |field|
+              field.unique_name
+            }
           end
           
           source_list = sources.collect { |s| "source = #{s}"}.join("\n")
@@ -96,9 +109,16 @@ index #{model.name.downcase}
   morphology = stem_en
   path = #{self.searchd_file_path}/#{model.name.downcase}
   charset_type = utf-8
-  #{ self.allow_star ? "enable_star = 1" : "" }
-}
-          INDEX
+  INDEX
+          if self.allow_star
+            file.write <<-INDEX
+  enable_star   = 1
+  prefix_fields = #{ prefixed_fields.flatten.join(", ") }
+  infix_fields  = #{ infix_fields.flatten.join(", ") }
+            INDEX
+          end
+          
+          file.write("}\n")
         end
       end
     end

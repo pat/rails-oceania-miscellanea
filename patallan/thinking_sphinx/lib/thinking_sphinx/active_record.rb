@@ -73,9 +73,9 @@ module ThinkingSphinx
             begin
               pager = WillPaginate::Collection.new(page,
                 sphinx.limit, results[:total_found])
-              pager.replace results[:matches].keys
+              pager.replace results[:matches].collect { |match| match[:doc] }
             rescue
-              results[:matches].keys
+              results[:matches].collect { |match| match[:doc] }
             end
           end
           
