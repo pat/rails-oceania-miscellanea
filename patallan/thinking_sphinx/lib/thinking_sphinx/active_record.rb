@@ -68,7 +68,11 @@ module ThinkingSphinx
             sphinx.match_mode = options[:match_mode] || :extended
             sphinx.limit      = options[:per_page].nil? ? sphinx.limit : options[:per_page].to_i
             sphinx.offset     = (page - 1) * sphinx.limit
-            results           = sphinx.query(str, self.name.downcase)
+            begin
+              results           = sphinx.query(str, self.name.downcase)
+            rescue Errno::ECONNREFUSED => err
+              raise ThinkingSphinx::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
+            end
             
             begin
               pager = WillPaginate::Collection.new(page,
