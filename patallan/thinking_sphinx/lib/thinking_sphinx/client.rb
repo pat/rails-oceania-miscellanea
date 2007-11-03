@@ -1,4 +1,7 @@
-# require 'thinking_sphinx/client/filter'
+# TODO:
+# - figure out nice way to handle anchors - separate class? or hash?
+# - allow for batching queries
+# - check messages to/from searchd
 
 module ThinkingSphinx
   class VersionError < StandardError;  end
@@ -21,7 +24,7 @@ module ThinkingSphinx
     }
     
     Versions = {
-      :search  => 0x107, # VER_COMMAND_SEARCH
+      :search  => 0x10F, # VER_COMMAND_SEARCH
       :excerpt => 0x100, # VER_COMMAND_EXCERPT
       :update  => 0x100  # VER_COMMAND_UPDATE
     }
@@ -75,7 +78,9 @@ module ThinkingSphinx
     
     attr_accessor :server, :port, :offset, :limit, :max_matches,
       :match_mode, :sort_mode, :sort_by, :weights, :id_range, :filters,
-      :group_by, :group_function, :group_clause
+      :group_by, :group_function, :group_clause, :group_distinct, :cut_off,
+      :retry_count, :retry_delay
+    attr_reader :anchor
     
     # Can instantiate with a specific server and port - otherwise it assumes
     # defaults of localhost and 3312 respectively. All other settings can be
@@ -97,57 +102,106 @@ module ThinkingSphinx
       @group_by       = ''
       @group_function = :day
       @group_clause   = '@group desc'
+      @group_distinct = ''
+      @cut_off        = 0
+      @retry_count    = 0
+      @retry_delay    = 0
+      @anchor         = {}
+      # string keys are index names, integer values are weightings
+      @index_weights  = {}
+      
+      @queue = []
+    end
+    
+    def anchor=(lat_attr, lat, long_attr, long)
+      @anchor = {
+        :latitude_attribute   => lat_attr,
+        :latitude             => lat,
+        :longtitude_attribute => long_attr,
+        :longtitude           => long
+      }
+    end
+    
+    def append_query(search, index = '*')
+      @queue << query_message(search, index)
+    end
+    
+    def run
+      response = Response.new request(:search, @queue)
+      
+      results = @queue.collect do
+        result = {
+          :matches         => [],
+          :fields          => [],
+          :attributes      => {},
+          :attribute_names => [],
+          :words           => {}
+        }
+
+        result[:status] = response.next_int
+        case result[:status]
+        when Statuses[:warning]
+          result[:warning] = response.next
+        when Statuses[:error]
+          result[:error] = response.next
+          next result
+        end
+        
+        result[:fields] = response.next_array
+
+        attributes = response.next_int
+        for i in 0...attributes
+          attribute_name = response.next
+          type           = response.next_int
+
+          result[:attributes][attribute_name] = type
+          result[:attribute_names] = attribute_name
+        end
+
+        matches   = response.next_int
+        is_64_bit = response.next_int
+        for i in 0...matches
+          doc = is_64_bit > 0 ? (response.next_int() << 32) + response.next_int : response.next_int
+          weight = response.next_int
+
+          result[:matches] << {:doc => doc, :weight => weight, :index => i, :attributes => {}}
+          result[:attribute_names].each do |attr|
+            case result[:attributes][attr]
+            when AttributeTypes[:float]
+              result[:matches].last[:attributes][attr] = response.next_float
+            when AttributeTypes[:multi]
+              result[:matches].last[:attributes][attr] = response.next_int_array
+            else
+              result[:matches].last[:attributes][attr] = response.next_int
+            end
+          end
+        end
+
+        result[:total] = response.next_int
+        result[:total_found] = response.next_int
+        result[:time] = '%.3f' % (response.next_int / 1000.0)
+
+        words = response.next_int
+        for i in 0...words
+          word = response.next
+          docs = response.next_int
+          hits = response.next_int
+          result[:words][word] = {:docs => docs, :hits => hits}
+        end
+
+        result
+      end
+      
+      @queue.clear
+      results
     end
     
     # Query the Sphinx daemon - defaulting to all indexes, but you can specify
     # a specific one if you wish. The search parameter should be a string
     # following Sphinx's expectations.
     def query(search, index = '*')      
-      response = Response.new request(:search, query_message(search, index))
-      
-      result = {
-        :matches         => [],
-        :fields          => [],
-        :attributes      => {},
-        :attribute_names => [],
-        :words           => {}
-      }
-      
-      result[:fields] = response.next_array
-      
-      attributes = response.next_int
-      for i in 0...attributes
-        attribute_name = response.next
-        type           = response.next_int
-        
-        result[:attributes][attribute_name] = type
-        result[:attribute_names] = attribute_name
-      end
-      
-      matches = response.next_int
-      for i in 0...matches
-        doc    = response.next_int
-        weight = response.next_int
-        
-        result[:matches] << {:doc => doc, :weight => weight, :index => i, :attributes => {}}
-        result[:attribute_names].each do |attr|
-          result[:matches].last[:attributes][attr] = response.next_int
-        end
-      end
-      
-      result[:total] = response.next_int
-      result[:total_found] = response.next_int
-      result[:time] = '%.3f' % (response.next_int / 1000.0)
-      
-      words = response.next_int
-      for i in 0...words
-        word = response.next
-        docs = response.next_int
-        hits = response.next_int
-        result[:words][word] = {:docs => docs, :hits => hits}
-      end
-      
-      result
+      @queue << query_message(search, index)
+      self.run.first
     end
     
     # Grab excerpts from the indexes. As part of the options, you will need to
@@ -173,13 +227,18 @@ module ThinkingSphinx
       
       response = Response.new request(:excerpt, excerpts_message(options))
       
-      options[:docs].collect { |doc| response.next }
+      options[:docs].collect { response.next }
     end
     
     # Updates are pre-alpha in Sphinx, so I'm not supporting that functionality
     # just yet. This method returns nil.
-    def update(index, attributes, values)
-      nil
+    def update(index, attributes, values_by_doc)
+      response = Response.new request(
+        :update,
+        update_message(index, attributes, values_by_doc)
+      )
+      
+      response.next_int
     end
     
     private
@@ -189,12 +248,14 @@ module ThinkingSphinx
     def connect(&block)
       socket = TCPSocket.new @server, @port
       
+      # Checking version
       version = socket.recv(4).unpack('N*').first
       if version < 1
         socket.close
         raise VersionError, "Can only connect to searchd version 1.0 or better, not version #{version}"
       end
       
+      # Send version
       socket.send [1].pack('N'), 0
       
       begin
@@ -204,16 +265,30 @@ module ThinkingSphinx
       end
     end
     
-    # Send a specific message, for a command type (eg, search, excerpts,
+    # Send a collection of messages, for a command type (eg, search, excerpts,
     # update), to the Sphinx daemon.
-    def request(command, message)
+    def request(command, messages)
       response = ""
       status   = -1
       version  = 0
+      length   = 0
+      message  = Array(messages).join("")
       
       connect do |socket|
-        socket.send [Commands[command], Versions[command], message.length].pack('nnN') + message, 0
-      
+        case command
+        when :search
+          # Message length is +4 to account for the following count value for
+          # the number of messages (well, that's what I'm assuming).
+          socket.send [
+            Commands[command], Versions[command],
+            4+message.length,  messages.length
+          ].pack("nnNN") + message, 0
+        else
+          socket.send [
+            Commands[command], Versions[command], message.length
+          ].pack("nnN") + message, 0
+        end
+        
         header = socket.recv(8)
         status, version, length = header.unpack('n2N')
         
@@ -223,10 +298,17 @@ module ThinkingSphinx
         end
       end
       
-      raise ResponseError, "No response from searchd (status: #{status}, version: #{version})" if response.empty?
+      if response.empty? || response.length != length
+        raise ResponseError, "No response from searchd (status: #{status}, version: #{version})"
+      end
       
       case status
       when Statuses[:ok]
+        if version < Versions[command]
+          puts format("searchd command v.%d.%d older than client (v.%d.%d)",
+            version >> 8, version & 0xff,
+            Versions[command] >> 8, Versions[command] & 0xff)
+        end
         response
       when Statuses[:warning]
         length = response[0, 4].unpack('N*').first
@@ -258,7 +340,7 @@ module ThinkingSphinx
       message.append_string index
       
       # ID Range
-      message.append_ints @id_range.first, @id_range.last
+      message.append_ints 0, @id_range.first, @id_range.last
       
       # Filters
       message.append_int @filters.length
@@ -269,6 +351,27 @@ module ThinkingSphinx
       message.append_string @group_by
       message.append_int @max_matches
       message.append_string @group_clause
+      message.append_ints @cut_off, @retry_count, @retry_delay
+      message.append_string @group_distinct
+      
+      # Anchor Point
+      if @anchor.empty?
+        message.append_int 0
+      else
+        message.append_int 1
+        message.append_string @anchor[:latitude_attribute]
+        message.append_string @anchor[:longtitude_attribute]
+        message.append_floats @anchor[:latitude], @anchor[:longtitude]
+      end
+      
+      # Per Index Weights
+      message.append_int @index_weights.length
+      @index_weights.each do |key,val|
+        message.append_string key
+        message.append_int val
+      end
+      
+      message.to_s
     end
     
     # Generation of the message to send to Sphinx for an excerpts request.
@@ -283,12 +386,26 @@ module ThinkingSphinx
       message.append_string options[:before_match]
       message.append_string options[:after_match]
       message.append_string options[:chunk_separator]
-      message.append_int options[:limit]
-      message.append_int options[:around]
+      message.append_ints options[:limit], options[:around]
       
       message.append_array options[:docs]
       
       message.to_s
+    end
+    
+    # Generation of the message to send to Sphinx to update attributes of a
+    # document.
+    def update_message(index, attributes, values_by_doc)
+      message = Message.new
+      
+      message.append_string index
+      message.append_array attributes
+      
+      message.append_int values_by_doc.length
+      values_by_doc.each do |key,values|
+        message.append_int key # document ID
+        message.append_ints *values # array of new values (integers)
+      end
     end
   end
 end
