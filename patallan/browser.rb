@@ -105,7 +105,7 @@ class IndexHandler < Mongrel::HttpHandler
       puts @directories.inspect
       if @directories.any?
         @directories.each do |k,directory|
-          out << "<a href=\"#{directory['uri']}\">#{directory['path']}</a><br />"
+          out << "<a href=\"#{directory['uri']}\">#{directory['uri']}</a><br />"
 	end
       else
         out << "No fucking directories, im a souless bastard."
