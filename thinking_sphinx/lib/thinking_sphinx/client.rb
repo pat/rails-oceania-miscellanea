@@ -1,8 +1,3 @@
-# TODO:
-# - figure out nice way to handle anchors - separate class? or hash?
-# - allow for batching queries
-# - check messages to/from searchd
-
 module ThinkingSphinx
   class VersionError < StandardError;  end
   class ResponseError < StandardError; end
