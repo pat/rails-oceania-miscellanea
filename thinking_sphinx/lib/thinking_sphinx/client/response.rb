@@ -28,12 +28,31 @@ module ThinkingSphinx
         return int
       end
       
+      # Return the next float value from the stream
+      def next_float
+        float = @str[marker, 4].unpack('f*').first
+        @marker += 4
+        
+        return float
+      end
+      
       # Returns an array of string items
       def next_array
         count = next_int
         items = []
         for i in 0...count
           items << self.next
+        end
+        
+        return items
+      end
+      
+      # Returns an array of int items
+      def next_int_array
+        count = next_int
+        items = []
+        for i in 0...count
+          items << self.next_int
         end
         
         return items
