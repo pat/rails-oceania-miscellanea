@@ -7,8 +7,9 @@ module ThinkingSphinx
     
     # Create a new index, passing in the model it is for.
     def initialize(model)
-      @model = model
+      @model  = model
       @fields = []
+      @delta  = false
     end
     
     # Add a new field to the index
@@ -21,7 +22,7 @@ module ThinkingSphinx
     # generates usable SQL for the Sphinx configuration file. It makes heavy
     # use of ActiveRecord's Join SQL code - thankfully saving me from going
     # insane.
-    def to_sql
+    def to_sql(d = false)
       associations = {}
       @fields.each { |field| associations[field.unique_name] = field.associations }
       
@@ -46,8 +47,17 @@ module ThinkingSphinx
       join_statement  = joins.collect { |join| join.association_join }.join(" ")
       field_select    = @fields.collect { |field| field.select_clause }.join(", ")
       group_statement = @fields.collect { |field| field.group_clause }.flatten.compact.uniq.join(", ")
+      delta_statement = @delta ? "AND #{@model.table_name}.delta = #{ d ? 1 : 0}" : ""
       
-      "SELECT #{@model.table_name}.#{@model.primary_key}, '#{@model}' AS class, #{field_select} FROM #{@model.table_name} #{join_statement} WHERE #{@model.table_name}.#{@model.primary_key} >= $start AND #{@model.table_name}.#{@model.primary_key} <= $end GROUP BY #{group_statement}"
+      <<-SQL
+SELECT #{@model.table_name}.#{@model.primary_key}, '#{@model}' AS class, #{field_select}
+FROM #{@model.table_name}
+  #{join_statement}
+WHERE #{@model.table_name}.#{@model.primary_key} >= $start
+  AND #{@model.table_name}.#{@model.primary_key} <= $end
+  #{delta_statement}
+GROUP BY #{group_statement}
+      SQL
     end
     
     # Simple helper method for the query info SQL
@@ -56,8 +66,32 @@ module ThinkingSphinx
     end
     
     # Simple helper method for the query range SQL
-    def sql_query_range
-      "SELECT MIN(#{@model.primary_key}), MAX(#{@model.primary_key}) FROM #{@model.table_name}"
+    def sql_query_range(d = false)
+      delta_statement = @delta ? "WHERE #{@model.table_name}.delta = #{ d ? 1 : 0}" : ""
+      "SELECT MIN(#{@model.primary_key}), MAX(#{@model.primary_key}) FROM #{@model.table_name} #{delta_statement}"
+    end
+    
+    def sql_query_pre
+      "UPDATE #{@model.table_name} SET delta = 0"
+    end
+    
+    # Check delta flag
+    def delta
+      @delta
+    end
+    
+    # Check delta flag
+    def delta?
+      @delta
+    end
+    
+    # Enable/disable delta
+    def delta=(d)
+      if d && @model.columns.detect { |col| col.name == "delta" && col.type == :boolean }
+        @delta = d
+      else
+        raise Exception, "Boolean column 'delta' is required for the model"
+      end
     end
   end
 end

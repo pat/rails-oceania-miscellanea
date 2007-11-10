@@ -40,6 +40,12 @@ module ThinkingSphinx
             @indexes << Index.new(self)
             yield @indexes.last
             ThinkingSphinx.indexed_models << self
+            
+            if @indexes.last.delta?
+              before_save :toggle_delta
+              after_save  :index_delta
+            end
+            
             @indexes.last
           end
 
@@ -102,6 +108,18 @@ module ThinkingSphinx
               find id
             }
           end
+        end
+        
+        private
+        
+        def toggle_delta
+          self.delta = true
+        end
+        
+        def index_delta
+          configuration = ThinkingSphinx::Configuration.new
+          system "indexer --config #{configuration.config_file} --rotate #{self.class.name.downcase}_delta"
+          true
         end
       end
     end
