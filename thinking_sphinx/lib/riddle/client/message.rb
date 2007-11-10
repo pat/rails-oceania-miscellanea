@@ -1,4 +1,4 @@
-module ThinkingSphinx
+module Riddle
   class Client
     # This class takes care of the translation of ints, strings and arrays to
     # the format required by the Sphinx service.

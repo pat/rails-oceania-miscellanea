@@ -3,15 +3,15 @@ require 'lib/thinking_sphinx/client/filter'
 require 'lib/thinking_sphinx/client/message'
 require 'lib/thinking_sphinx/client/response'
 
-client = ThinkingSphinx::Client.new("localhost", 3312)
+client = ThinkingSphinx::Client.new("localhost", 3313)
 begin
   results = client.excerpts(
     :docs             => [
-      "this is my test text to be highlighted",
+      "John Smith is my good friend",
       "this is another test text to be highlighted"
     ],
-    :words            => "test text",
-    :index            => "edition",
+    :words            => "John Smith",
+    :index            => "people",
     :before_match     => "<b>",
     :after_match      => "</b>",
     :chunk_separator  => " ... ",

@@ -1,4 +1,4 @@
-module ThinkingSphinx
+module Riddle
   class Client
     # Used to interrogate responses from the Sphinx daemon. Keep in mind none
     # of the methods here check whether the data they're grabbing are what the
@@ -30,7 +30,7 @@ module ThinkingSphinx
       
       # Return the next float value from the stream
       def next_float
-        float = @str[marker, 4].unpack('f*').first
+        float = @str[@marker, 4].unpack('f*').first
         @marker += 4
         
         return float
