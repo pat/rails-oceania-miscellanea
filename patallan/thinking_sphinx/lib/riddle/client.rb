@@ -1,4 +1,4 @@
-module ThinkingSphinx
+module Riddle
   class VersionError < StandardError;  end
   class ResponseError < StandardError; end
   
@@ -74,8 +74,8 @@ module ThinkingSphinx
     attr_accessor :server, :port, :offset, :limit, :max_matches,
       :match_mode, :sort_mode, :sort_by, :weights, :id_range, :filters,
       :group_by, :group_function, :group_clause, :group_distinct, :cut_off,
-      :retry_count, :retry_delay
-    attr_reader :anchor
+      :retry_count, :retry_delay, :anchor
+    attr_reader :queue
     
     # Can instantiate with a specific server and port - otherwise it assumes
     # defaults of localhost and 3312 respectively. All other settings can be
@@ -92,7 +92,7 @@ module ThinkingSphinx
       @sort_mode      = :relevance
       @sort_by        = ''
       @weights        = []
-      @id_range       = 0..0xFFFFFFFF
+      @id_range       = 0..0
       @filters        = []
       @group_by       = ''
       @group_function = :day
@@ -108,7 +108,7 @@ module ThinkingSphinx
       @queue = []
     end
     
-    def anchor=(lat_attr, lat, long_attr, long)
+    def set_anchor(lat_attr, lat, long_attr, long)
       @anchor = {
         :latitude_attribute   => lat_attr,
         :latitude             => lat,
@@ -150,7 +150,7 @@ module ThinkingSphinx
           type           = response.next_int
 
           result[:attributes][attribute_name] = type
-          result[:attribute_names] = attribute_name
+          result[:attribute_names] << attribute_name
         end
 
         matches   = response.next_int
@@ -172,9 +172,9 @@ module ThinkingSphinx
           end
         end
 
-        result[:total] = response.next_int
-        result[:total_found] = response.next_int
-        result[:time] = '%.3f' % (response.next_int / 1000.0)
+        result[:total] = response.next_int.to_i || 0
+        result[:total_found] = response.next_int.to_i || 0
+        result[:time] = ('%.3f' % (response.next_int / 1000.0)).to_f || 0.0
 
         words = response.next_int
         for i in 0...words
@@ -203,15 +203,17 @@ module ThinkingSphinx
     # define:
     # * :docs
     # * :words
+    # * :index
     #
     # Optional settings include:
-    # * :index (defaults to all indexes)
     # * :before_match (defaults to <span class="match">)
     # * :after_match (defaults to </span>)
     # * :chunk_separator (defaults to ' &#8230; ' - which is an HTML ellipsis)
     # * :limit (defaults to 256)
     # * :around (defaults to 5)
     #
+    # The defaults differ from the official PHP client, as I've opted for
+    # semantic HTML markup.
     def excerpts(options = {})
       options[:index]           ||= '*'
       options[:before_match]    ||= '<span class="match">'
@@ -225,8 +227,7 @@ module ThinkingSphinx
       options[:docs].collect { response.next }
     end
     
-    # Updates are pre-alpha in Sphinx, so I'm not supporting that functionality
-    # just yet. This method returns nil.
+    # Update attributes
     def update(index, attributes, values_by_doc)
       response = Response.new request(
         :update,
@@ -401,6 +402,8 @@ module ThinkingSphinx
         message.append_int key # document ID
         message.append_ints *values # array of new values (integers)
       end
+      
+      message.to_s
     end
   end
 end

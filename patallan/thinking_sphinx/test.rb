@@ -1,10 +1,10 @@
 require 'optparse'
-require 'lib/thinking_sphinx/client'
-require 'lib/thinking_sphinx/client/filter'
-require 'lib/thinking_sphinx/client/message'
-require 'lib/thinking_sphinx/client/response'
+require 'lib/riddle/client'
+require 'lib/riddle/client/filter'
+require 'lib/riddle/client/message'
+require 'lib/riddle/client/response'
 
-client = ThinkingSphinx::Client.new("localhost", 3312)
+client = Riddle::Client.new("localhost", 3313)
 index  = '*'
 client.weights = [100, 1]
 
@@ -93,14 +93,14 @@ begin
   results[:matches].each_with_index do |hash, id|
     print "#{id+1}. doc_id=#{hash[:doc]}, weight=#{hash[:weight]}"
     results[:attributes].each do |name,type|
-      if type == :timestamp
-        print ", #{name}=#{ Time.at(hash[:attributes][name]).strftime("Y-m-d H:M:S") }"
+      if type == Riddle::Client::AttributeTypes[:timestamp]
+        print ", #{name}=#{ Time.at(hash[:attributes][name]) }"
       else
-        print ", #{name}=(#{ hash[:attributes][name].join(",") })"
+        print ", #{name}=(#{ Array(hash[:attributes][name]).join(",") })"
       end
     end
     puts ""
   end
-rescue ThinkingSphinx::VersionError, ThinkingSphinx::ResponseError => err
+rescue Riddle::VersionError, Riddle::ResponseError => err
   puts "Query failed: #{err}."
 end

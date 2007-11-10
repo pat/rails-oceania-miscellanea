@@ -63,7 +63,7 @@ module ThinkingSphinx
             page = options[:page].nil? ? 1 : options[:page].to_i
             
             configuration     = ThinkingSphinx::Configuration.new
-            sphinx            = ThinkingSphinx::Client.new
+            sphinx            = Riddle::Client.new
             sphinx.port       = configuration.port
             sphinx.match_mode = options[:match_mode] || :extended
             sphinx.limit      = options[:per_page].nil? ? sphinx.limit : options[:per_page].to_i
@@ -71,7 +71,7 @@ module ThinkingSphinx
             begin
               results           = sphinx.query(str, self.name.downcase)
             rescue Errno::ECONNREFUSED => err
-              raise ThinkingSphinx::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
+              raise Riddle::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
             end
             
             begin
