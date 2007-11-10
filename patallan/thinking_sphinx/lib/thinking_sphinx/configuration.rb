@@ -10,7 +10,7 @@ module ThinkingSphinx
       self.config_file       = "#{RAILS_ROOT}/config/#{environment}.sphinx.conf"
       self.searchd_log_file  = "#{RAILS_ROOT}/log/searchd.log"
       self.query_log_file    = "#{RAILS_ROOT}/log/searchd.query.log"
-      self.pid_file          = "#{RAILS_ROOT}/log/searchd.pid"
+      self.pid_file          = "#{RAILS_ROOT}/log/searchd.#{environment}.pid"
       self.searchd_file_path = "#{RAILS_ROOT}/db/sphinx/#{environment}/"
       self.port              = 3312
       self.allow_star        = false
@@ -24,7 +24,7 @@ module ThinkingSphinx
     # config file::      config/#{environment}.sphinx.conf
     # searchd log file:: log/searchd.log
     # query log file::   log/searchd.query.log
-    # pid file::         log/searchd.pid
+    # pid file::         log/searchd.#{environment}.pid
     # searchd files::    db/sphinx/#{environment}/
     # address::          0.0.0.0 (all)
     # port::             3312
@@ -73,7 +73,7 @@ searchd
           model.indexes.each_with_index do |index, i|
             file.write <<-SOURCE
 
-source #{model.name.downcase}_#{i}
+source #{model.name.downcase}_#{i}_core
 {
   type = mysql
   sql_host = #{database_conf["host"] || "localhost"}
@@ -81,18 +81,26 @@ source #{model.name.downcase}_#{i}
   sql_pass = #{database_conf["password"]}
   sql_db   = #{database_conf["database"]}
 
+  sql_query_pre    = #{index.sql_query_pre}
   sql_query        = #{index.to_sql}
   sql_query_range  = #{index.sql_query_range}
   sql_query_info   = #{index.sql_query_info}
 }
+
+source #{model.name.downcase}_#{i}_delta : #{model.name.downcase}_#{i}_core
+{
+  sql_query        = #{index.to_sql true}
+  sql_query_range  = #{index.sql_query_range true}
+}
             SOURCE
-            sources << "#{model.name.downcase}_#{i}"
+            sources << "#{model.name.downcase}_#{i}_core"
           end
           
-          source_list = sources.collect { |s| "source = #{s}"}.join("\n")
+          source_list = sources.collect { |s| "source = #{s}" }.join("\n")
+          delta_list  = source_list.gsub(/_core\n/, "_delta\n")
           file.write <<-INDEX
 
-index #{model.name.downcase}
+index #{model.name.downcase}_core
 {
   #{source_list}
   morphology = stem_en
@@ -103,11 +111,26 @@ index #{model.name.downcase}
             file.write <<-INDEX
   enable_star    = 1
   min_prefix_len = 1
-  min_infix_len  = 1
             INDEX
           end
           
           file.write("}\n")
+          
+          file.write <<-INDEX
+
+index #{model.name.downcase}_delta : #{model.name.downcase}_core
+{
+  #{delta_list}
+  path = #{self.searchd_file_path}/#{model.name.downcase}_delta
+}
+
+index #{model.name.downcase}
+{
+  type = distributed
+  local = #{model.name.downcase}_core
+  local = #{model.name.downcase}_delta
+}
+          INDEX
         end
       end
     end

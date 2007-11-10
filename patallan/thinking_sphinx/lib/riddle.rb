@@ -1,3 +1,8 @@
+require 'riddle/client'
+require 'riddle/client/filter'
+require 'riddle/client/message'
+require 'riddle/client/response'
+
 module Riddle #:nodoc:
   module Version #:nodoc:
     Major = 0

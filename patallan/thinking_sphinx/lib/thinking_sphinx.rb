@@ -1,6 +1,5 @@
 require 'thinking_sphinx/active_record'
 require 'thinking_sphinx/association'
-require 'thinking_sphinx/client'
 require 'thinking_sphinx/configuration'
 require 'thinking_sphinx/field'
 require 'thinking_sphinx/index'
