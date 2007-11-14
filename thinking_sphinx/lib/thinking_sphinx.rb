@@ -70,8 +70,6 @@ require 'thinking_sphinx/index'
 # grouping.
 #
 module ThinkingSphinx
-  class ConnectionError < StandardError; end
-  
   def self.indexed_models
     @@indexed_models ||= []
   end

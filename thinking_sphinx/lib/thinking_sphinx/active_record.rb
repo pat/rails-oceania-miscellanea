@@ -74,8 +74,16 @@ module ThinkingSphinx
             sphinx.match_mode = options[:match_mode] || :extended
             sphinx.limit      = options[:per_page].nil? ? sphinx.limit : options[:per_page].to_i
             sphinx.offset     = (page - 1) * sphinx.limit
+            
+            if options[:order]
+              sphinx.sort_mode  = :extended
+              sphinx.sort_by    = options[:order]
+            end
+            
             begin
-              results           = sphinx.query(str, self.name.downcase)
+              query = "#{str} @class #{self.name}"
+              logger.debug "Sphinx: #{query}"
+              results = sphinx.query query
             rescue Errno::ECONNREFUSED => err
               raise Riddle::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
             end
@@ -104,8 +112,9 @@ module ThinkingSphinx
           #
           def search(*args)
             ids = search_for_ids(*args)
+            options = args.extract_options!
             ids.replace ids.collect { |id|
-              find id
+              find id, :include => options[:include]
             }
           end
         end
@@ -117,8 +126,10 @@ module ThinkingSphinx
         end
         
         def index_delta
-          configuration = ThinkingSphinx::Configuration.new
-          system "indexer --config #{configuration.config_file} --rotate #{self.class.name.downcase}_delta"
+          unless RAILS_ENV == "test"
+            configuration = ThinkingSphinx::Configuration.new
+            system "indexer --config #{configuration.config_file} --rotate #{self.class.name.downcase}_delta"
+          end
           true
         end
       end
