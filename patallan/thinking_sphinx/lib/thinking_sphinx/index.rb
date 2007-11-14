@@ -3,19 +3,26 @@ module ThinkingSphinx
   # query generation - although thankfully ActiveRecord does most of the heavy
   # lifting. Syntax examples for indexes can be found at ActiveRecord#define_index.
   class Index
-    attr_accessor :model, :fields
+    attr_accessor :model, :fields, :attributes
     
     # Create a new index, passing in the model it is for.
     def initialize(model)
-      @model  = model
-      @fields = []
-      @delta  = false
+      @model      = model
+      @fields     = []
+      @attributes = []
+      @delta      = false
     end
     
     # Add a new field to the index
     def includes(*args)
       @fields << Field.new(self, args.empty? ? nil : args)
       @fields.last
+    end
+    
+    # Add a new attribute to the index
+    def has
+      @attributes << Attribute.new(self)
+      @attributes.last
     end
         
     # This method grabs all the fields, combines all their associations, and
@@ -44,13 +51,21 @@ module ThinkingSphinx
         field.prefix = field.associations.empty? ? @model.table_name : joins.last.aliased_table_name
       end
       
+      @attributes.each do |attribute|
+        attribute.prefix = @model.table_name
+      end
+      
       join_statement  = joins.collect { |join| join.association_join }.join(" ")
-      field_select    = @fields.collect { |field| field.select_clause }.join(", ")
+      field_select    = (
+        @attributes.collect { |attrib| attrib.select_clause } +
+        @fields.collect { |field| field.select_clause }
+      ).join(", ")
       group_statement = @fields.collect { |field| field.group_clause }.flatten.compact.uniq.join(", ")
       delta_statement = @delta ? "AND #{@model.table_name}.delta = #{ d ? 1 : 0}" : ""
       
       <<-SQL
-SELECT #{@model.table_name}.#{@model.primary_key}, '#{@model}' AS class, #{field_select}
+SELECT #{@model.table_name}.#{@model.primary_key}, '#{@model}' AS class,
+  #{field_select}
 FROM #{@model.table_name}
   #{join_statement}
 WHERE #{@model.table_name}.#{@model.primary_key} >= $start
@@ -72,7 +87,7 @@ GROUP BY #{group_statement}
     end
     
     def sql_query_pre
-      "UPDATE #{@model.table_name} SET delta = 0"
+      delta? ? "UPDATE #{@model.table_name} SET delta = 0" : ""
     end
     
     # Check delta flag

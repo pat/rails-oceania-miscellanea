@@ -71,6 +71,14 @@ searchd
           infixed_fields  = []
           
           model.indexes.each_with_index do |index, i|
+            attr_sources = index.attributes.collect { |attrib|
+              if attrib.timestamp?
+                "sql_date_column  = #{attrib.unique_name}"
+              else
+                "sql_group_column = #{attrib.unique_name}"
+              end
+            }.join("\n  ")
+            
             file.write <<-SOURCE
 
 source #{model.name.downcase}_#{i}_core
@@ -82,29 +90,36 @@ source #{model.name.downcase}_#{i}_core
   sql_db   = #{database_conf["database"]}
 
   sql_query_pre    = #{index.sql_query_pre}
-  sql_query        = #{index.to_sql}
+  sql_query        = #{index.to_sql.gsub(/\n/, ' ')}
   sql_query_range  = #{index.sql_query_range}
   sql_query_info   = #{index.sql_query_info}
+  #{attr_sources}
 }
+            SOURCE
+            
+            if index.delta?
+              file.write <<-SOURCE
 
 source #{model.name.downcase}_#{i}_delta : #{model.name.downcase}_#{i}_core
 {
-  sql_query        = #{index.to_sql true}
+  sql_query_pre    = 
+  sql_query        = #{index.to_sql(true).gsub(/\n/, ' ')}
   sql_query_range  = #{index.sql_query_range true}
 }
-            SOURCE
+              SOURCE
+            end
             sources << "#{model.name.downcase}_#{i}_core"
           end
           
           source_list = sources.collect { |s| "source = #{s}" }.join("\n")
-          delta_list  = source_list.gsub(/_core\n/, "_delta\n")
+          delta_list  = source_list.gsub(/_core$/, "_delta")
           file.write <<-INDEX
 
 index #{model.name.downcase}_core
 {
   #{source_list}
   morphology = stem_en
-  path = #{self.searchd_file_path}/#{model.name.downcase}
+  path = #{self.searchd_file_path}/#{model.name.downcase}_core
   charset_type = utf-8
   INDEX
           if self.allow_star
@@ -116,7 +131,8 @@ index #{model.name.downcase}_core
           
           file.write("}\n")
           
-          file.write <<-INDEX
+          if model.indexes.any? { |index| index.delta? }
+            file.write <<-INDEX
 
 index #{model.name.downcase}_delta : #{model.name.downcase}_core
 {
@@ -130,7 +146,16 @@ index #{model.name.downcase}
   local = #{model.name.downcase}_core
   local = #{model.name.downcase}_delta
 }
-          INDEX
+            INDEX
+          else
+            file.write <<-INDEX
+index #{model.name.downcase}
+{
+  type = distributed
+  local = #{model.name.downcase}_core
+}
+            INDEX
+          end
         end
       end
     end

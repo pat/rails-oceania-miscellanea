@@ -4,7 +4,7 @@ require 'lib/riddle/client/filter'
 require 'lib/riddle/client/message'
 require 'lib/riddle/client/response'
 
-client = Riddle::Client.new("localhost", 3313)
+client = Riddle::Client.new("localhost", 3312)
 index  = '*'
 client.weights = [100, 1]
 
