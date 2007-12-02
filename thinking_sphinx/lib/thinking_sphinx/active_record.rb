@@ -35,6 +35,30 @@ module ThinkingSphinx
           #     index.includes.author(:first_name, :last_name).as.author
           #   end
           #
+          # If you want some (integer, float or timestamp) attributes, the
+          # syntax is a little different:
+          #
+          #   define_index do |index|
+          #     index.has.created_at
+          #     index.has.updated_at
+          #   end
+          #
+          # Please note that attributes can't be requested from associations.
+          #
+          # One last feature, albeit one that isn't quite working correctly, is
+          # the delta index. This requires the model to have a boolean field
+          # named 'delta', and is enabled as follows:
+          #
+          #   define_index do |index|
+          #     index.delta = true
+          #     # usual attributes and fields go here
+          #   end
+          #
+          # The only catch with the delta index (which catches all the changes
+          # between proper reindexes), is that currently it's one step behind
+          # the most recent record changes. This will get fixed in the future,
+          # but it's an improvement on no delta index at all.
+          #
           def define_index(&block)
             @indexes ||= []
             @indexes << Index.new(self)
@@ -104,11 +128,16 @@ module ThinkingSphinx
           # The same parameters - :page and :per_page - work as expected, and
           # the returned result set can be used by the will_paginate helper.
           #
+          # Please use only specified attributes when ordering results -
+          # anything else will make the query fall over.
+          #
           # Examples:
           #
           #   Invoice.search :conditions => {:customer => "Pat"}
           #   Invoice.search "Pat" # search all fields
           #   Invoice.search "Pat", :page => (params[:page] || 1)
+          #   Invoice.search "Pat", :order => "created_at ASC"
+          #   Invoice.search "Pat", :include => :line_items
           #
           def search(*args)
             ids = search_for_ids(*args)
