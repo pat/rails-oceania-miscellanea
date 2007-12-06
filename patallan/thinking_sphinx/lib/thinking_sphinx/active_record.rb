@@ -3,6 +3,10 @@ module ThinkingSphinx
   # models, and search for querying Sphinx. If you want to interrogate the
   # index objects created for the model, you can use the class-level accessor
   # :indexes.
+  #
+  # Code for after_commit callback is written by Eli Miller:
+  # http://elimiller.blogspot.com/2007/06/proper-cache-expiry-with-aftercommit.html
+  # 
   module ActiveRecord
     def self.included(base)
       base.class_eval do
@@ -66,8 +70,8 @@ module ThinkingSphinx
             ThinkingSphinx.indexed_models << self
             
             if @indexes.last.delta?
-              before_save :toggle_delta
-              after_save  :index_delta
+              before_save   :toggle_delta
+              after_commit  :index_delta
             end
             
             @indexes.last
@@ -146,7 +150,36 @@ module ThinkingSphinx
               find id, :include => options[:include]
             }
           end
+          
+          def after_commit(*callbacks, &block)
+            callbacks << block if block_given?
+            write_inheritable_array(:after_commit, callbacks)
+          end
         end
+        
+        def save_with_after_commit_callback(*args)
+          value = save_without_after_commit_callback(args)
+          callback(:after_commit)
+          return value
+        end
+        
+        alias_method_chain :save, :after_commit_callback
+
+        def save_with_after_commit_callback!(*args)
+          value = save_without_after_commit_callback!
+          callback(:after_commit)
+          return value
+        end
+        
+        alias_method_chain :save!, :after_commit_callback
+
+        def destroy_with_after_commit_callback
+          value = destroy_without_after_commit_callback
+          callback(:after_commit)
+          return value
+        end
+        
+        alias_method_chain :destroy, :after_commit_callback
         
         private
         
