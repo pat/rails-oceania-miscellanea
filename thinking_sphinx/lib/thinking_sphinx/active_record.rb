@@ -147,8 +147,8 @@ module ThinkingSphinx
             ids = search_for_ids(*args)
             options = args.extract_options!
             ids.replace ids.collect { |id|
-              find id, :include => options[:include]
-            }
+              find id, :include => options[:include] rescue nil
+            }.compact
           end
           
           def after_commit(*callbacks, &block)
