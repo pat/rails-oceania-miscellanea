@@ -1,0 +1,22 @@
+<h1>Localities by Postcode</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Postcode</th>
+      <th>Suburb</th>
+      <th>State</th>
+      <th>Comment</th>
+    </tr>
+  </thead>
+  <tbody>
+  <% @localities.each do |locality| %>
+    <tr>
+      <td><%= locality.postcode %></td>
+      <td><%= locality.suburb %></td>
+      <td><%= locality.state %></td>
+      <td><%= locality.comments %></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
