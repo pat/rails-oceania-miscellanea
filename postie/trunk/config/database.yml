@@ -1,0 +1,17 @@
+---
+# This is a sample database file for the ActiveRecord ORM
+:development: &defaults
+  :adapter: mysql
+  :database: postie_development
+  :username: postie
+  :password: wossname
+  :host: localhost
+  :socket: /tmp/mysql.sock
+
+:test:
+  <<: *defaults
+  :database: postie_test
+
+:production:
+  <<: *defaults
+  :database: postie_production
