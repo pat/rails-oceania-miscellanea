@@ -1,0 +1,1 @@
+"#{defined?(yo) && yo ? yo : "No Locals!"}"

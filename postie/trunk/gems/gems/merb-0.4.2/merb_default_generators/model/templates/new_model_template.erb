@@ -1,0 +1,5 @@
+class <%= class_name %>
+<% unless table_attributes.empty? -%>
+  attr_accessor <%= table_attributes.map{|a| ":#{a.name}" }.compact.uniq.join(", ") %>
+<% end -%>
+end

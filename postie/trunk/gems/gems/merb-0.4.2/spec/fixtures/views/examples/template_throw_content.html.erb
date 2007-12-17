@@ -1,0 +1,10 @@
+<% throw_content :header do %>
+  THROWN CONTENT
+<% end %>
+
+<%= controller.thrown_content[:header] -%>
+<% throw_content :header do %>
+  THROWN CONTENT
+<% end %>
+
+<%= @_header_content -%>
