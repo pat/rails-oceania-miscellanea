@@ -1,0 +1,62 @@
+== 1.1.1 2007-11-08
+
+* active_support is now a dependency of this gem on install (it was being used
+  but wasn't a dependency)
+
+== 1.1.0 2007-11-05
+
+* Promoted 'application_generator' and 'component_generator' to Rubigen
+from NewGem project (they are available even if newgem not installed)
+* install_rubigen_scripts default test fixed by mapping scopes to strings
+* version.js uploaded to website
+
+== 1.0.8 2007-11-03
+
+* install_rubigen_scripts adds 'test_unit' to scopes unless a test-related scope is added
+* remove examples directory because it's redundant.  See rails gem. [Winston Tsang]
+* Add missing template empty_log. [Winston Tsang]
+* Moved test_unit generator to test_unit scope (instead of global scope)
+* generator_full_paths now returns the sources in reverse order [thx hassox]
+
+== 1.0.7 2007-11-02
+
+* Moved test_unit generator to test_unit scope (instead of global scope)
+
+== 1.0.6 2007-10-18
+
+* Templates can end with .erb (e.g. model.rb.erb) and template_copy_each will remove the .erb extension (create model.rb)
+
+== 1.0.5 2007-10-08
+
+* Added Jeremy Kemper to license/copyright/gem author list.
+
+== 1.0.4 2007-09-07
+
+* New manifest actions:
+  * m.folder - copies over all files in folder into target path
+* helper run_generator returns generator instance (so you can assert instance variables/methods etc)
+* base_name method for generators - returns basename of destination_root, unless its trunk/tags/branches
+
+== 1.0.3 2007-08-22
+
+* /generators folder is automatically picked up by all component/app generators [bug fix]
+
+== 1.0.2 2007-08-22
+
+* Renamed rubigen_install_script -> install_rubigen_script
+* install_rubigen_script is now a component generator so can be reused by other generators to create script/generate
+* Added "Thanks to Jeremy Kemper" into website
+* Cleaned up USAGE for test_unit
+* If a generator does not have a USAGE file, then it is invisible from lists of available generators.
+  This will be the mechanism for having hidden generators (e.g. install_rubigen_scripts)
+
+== 1.0.1 2007-08-20
+
+* Moved builtin generators into root folders, away from lib folder, to protected them
+  from ri/rdocs processes (which didn't like ERb <%= %> inside Ruby files)
+* New app: rubigen_install_script
+  * adds script/generate and script/destroy to current folder
+
+== 1.0.0 2007-08-17
+* 1 major enhancement:
+  * Initial release

@@ -1,0 +1,12 @@
+Test the Concat Helper
+<% concat( "Concat Text", binding ) -%>
+
+<% def tester( &block ) -%>
+<%   concat( "Start Tester Block", block.binding ) %>
+<%   yield %>
+<%   concat( "Finish Tester Block", block.binding ) %>
+<% end %>
+
+<% tester do %>
+  In Tester Block
+<% end %>

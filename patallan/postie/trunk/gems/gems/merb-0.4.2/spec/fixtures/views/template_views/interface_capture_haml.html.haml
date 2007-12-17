@@ -1,0 +1,15 @@
+- @foo = capture do
+  Capture Text Without Args
+
+= @foo
+
+- @struct = Struct.new( :value ) 
+- @obj = @struct.new( "capture text from yielded object" )
+
+- @foo2 = capture( @obj ) do |obj| 
+  BEFORE
+  = obj.value 
+  AFTER
+
+
+= @foo2

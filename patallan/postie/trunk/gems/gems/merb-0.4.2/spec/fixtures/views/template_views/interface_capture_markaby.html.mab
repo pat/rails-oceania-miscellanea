@@ -1,0 +1,4 @@
+@foo = capture do 
+  "Capture Text Without Args"
+end
+
