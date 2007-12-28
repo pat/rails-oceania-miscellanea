@@ -6,7 +6,8 @@ module ThinkingSphinx
   #
   # Code for after_commit callback is written by Eli Miller:
   # http://elimiller.blogspot.com/2007/06/proper-cache-expiry-with-aftercommit.html
-  # 
+  # with slight modification from Joost Hietbrink.
+  #
   module ActiveRecord
     def self.included(base)
       base.class_eval do
@@ -49,19 +50,17 @@ module ThinkingSphinx
           #
           # Please note that attributes can't be requested from associations.
           #
-          # One last feature, albeit one that isn't quite working correctly, is
-          # the delta index. This requires the model to have a boolean field
-          # named 'delta', and is enabled as follows:
+          # One last feature is the delta index. This requires the model to
+          # have a boolean field named 'delta', and is enabled as follows:
           #
           #   define_index do |index|
           #     index.delta = true
           #     # usual attributes and fields go here
           #   end
           #
-          # The only catch with the delta index (which catches all the changes
-          # between proper reindexes), is that currently it's one step behind
-          # the most recent record changes. This will get fixed in the future,
-          # but it's an improvement on no delta index at all.
+          # In previous versions of Thinking Sphinx, delta indexes were one
+          # step behind the most recent record changes. This has since been
+          # fixed.
           #
           def define_index(&block)
             @indexes ||= []

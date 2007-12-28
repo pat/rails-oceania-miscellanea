@@ -6,7 +6,7 @@ Some of the code will be quite familiar, as much of the learning of how to inter
 
 The searching is getting closer and closer to being complete - you can order results on attributes (not fields - that's a limitation of Sphinx), and if you specify an <tt>:include</tt> parameter, like in a <tt>find</tt> call, it will pass that through to the resulting <tt>find</tt> call under the hood. No grouping yet, though.
 
-There is also some support for a delta index - there must be a boolean <tt>delta</tt> field in the model's database table, mind you, and it's not quite perfect - always one update behind the current data - but will get better soon.
+There is also some support for a delta index - there must be a boolean <tt>delta</tt> field in the model's database table - which will create a second index for that model, with the latest changes to records (instead of having to do a major index more often).
 
 Any questions, comments or suggestions can be sent to pat at freelancing-gods dot com.
 
@@ -47,7 +47,7 @@ Better examples can be found at the {define_index}[link:classes/ThinkingSphinx/A
 
 Please note attributes can only be taken from the base model, not from the associations - and, according to Sphinx's requirements, they must be only integers, floats, or timestamps (ThinkingSphinx will convert datetimes to timestamps for you).
 
-Delta indexes keep track of any changes since the proper index has occurred (although at this point, always one change away from current, due to transactions - there is a solution, just not yet implemented). This means there's two indexes per model, with the smaller delta one updated after changes to models. All in the background, though - but don't use this as a reason to not run a proper index regularly - the advantage of a delta index only exists if that delta is kept small.
+Delta indexes keep track of any changes since the proper index has occurred. This means there's two indexes per model, with the smaller delta one updated after changes to models. All in the background, though - but don't use this as a reason to not run a proper index regularly - the advantage of a delta index only exists if that delta is kept small.
 
 I've written this plugin in a way that hopefully avoids the need to edit sphinx config files. If you find that's not the case, let me know.
 
