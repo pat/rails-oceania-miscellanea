@@ -27,6 +27,19 @@ Merb::Router.prepare do |r|
 
   # r.default_routes
   
+  r.match(%r[^/(\d\d\d\d)(\.(.+))?$]).to(
+    :controller => 'postcodes',
+    :action     => 'show',
+    :id         => '[1]',
+    :format     => '[3]'
+  )
+  r.match(%r[^/([^\.]+)(\.(.+))?$]).to(
+    :controller => 'suburbs',
+    :action     => 'show',
+    :id         => '[1]',
+    :format     => '[3]'
+  )
+  
   # Change this for your home page to be available at /
   r.match('/').to(:controller => 'suburbs', :action => 'index')
 end
