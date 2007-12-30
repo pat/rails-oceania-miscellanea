@@ -1,0 +1,15 @@
+<h1>Postie Web Service</h1>
+
+<p>This is a simple REST web-service that provides searching of Australian suburbs and postcodes. Here's some example URLs:</p>
+
+<ul>
+  <li><a href="/Northcote">auspostie.com/Northcote</a> - basic suburb search</li>
+  <li><a href="/Northcote.js">auspostie.com/Northcote.js</a> - get the data as JSON</li>
+  <li><a href="/Northcote.js">auspostie.com/Northcote.xml</a> - get the data as XML</li>
+  <li><a href="/Northcote.js">auspostie.com/Northcote.json</a> - different MIME Type, but same output, as .js</li>
+  <li><a href="/3000">auspostie.com/3000</a> - if the request is four digits, it's treated as a postcode</li>
+  <li><a href="/3000.js">auspostie.com/3000.js</a> - same extensions work for postcode seaches</li>
+  <li><a href="/Melbour">auspostie.com/Melbour</a> - suburb search returns partial matches (unlike the postcode search)</li>
+</ul>
+
+<p>This service is written in <a href="http://merbivore.com">Merb</a>, by <a href="http://freelancing-gods.com">Pat Allan</a>, using data provided by <a href="http://www.auspost.com.au">Australia Post</a>. There are no limitations on the service - feel free to use it as much as you wish (famous last words, I know). If you'd like to get in touch, use the email address pat at this domain.</p>

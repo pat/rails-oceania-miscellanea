@@ -2,7 +2,7 @@ class Suburbs < Application
   provides :xml, :json, :js
   
   def index
-    redirect "/suburbs/Northcote"
+    render
   end
   
   def show(id)
