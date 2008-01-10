@@ -157,7 +157,7 @@ module ThinkingSphinx
         end
         
         def save_with_after_commit_callback(*args)
-          value = save_without_after_commit_callback(args)
+          value = save_without_after_commit_callback(*args)
           callback(:after_commit) if value
           return value
         end
@@ -165,7 +165,7 @@ module ThinkingSphinx
         alias_method_chain :save, :after_commit_callback
 
         def save_with_after_commit_callback!(*args)
-          value = save_without_after_commit_callback!
+          value = save_without_after_commit_callback!(*args)
           callback(:after_commit) if value
           return value
         end
