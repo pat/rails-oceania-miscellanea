@@ -73,7 +73,7 @@ searchd
           model.indexes.each_with_index do |index, i|
             attr_sources = index.attributes.collect { |attrib|
               if attrib.timestamp?
-                "sql_date_column  = #{attrib.unique_name}"
+                "sql_attr_timestamp  = #{attrib.unique_name}"
               else
                 "sql_group_column = #{attrib.unique_name}"
               end
@@ -183,7 +183,7 @@ index #{model.name.downcase}
       
       conf.each do |key,value|
         self.send("#{key}=", value) if self.methods.include?("#{key}=")
-      end
+      end unless conf.nil?
     end
   end
 end
