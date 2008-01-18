@@ -7,6 +7,8 @@ module ThinkingSphinx
     # Pass in the index this field is tied to, as well as the column name (if
     # there is one at this point).
     def initialize(index, column=nil)
+      column = column.first if column.is_a?(Array) && column.length == 1
+      
       @index, @column = index, column
       @associations   = []
       @expecting_as   = false
@@ -34,6 +36,8 @@ module ThinkingSphinx
     # Returns this field's part of the SQL SELECT clause - adds concats and
     # group concats when necessary. 
     def select_clause
+      return @column if @column.is_a?(String)
+      
       clause = Array(@column).collect { |col| "#{self.prefix}.#{col}" }.join(", ")
       clause = "CONCAT_WS(' ', #{clause})" if @column.is_a?(Array)
       
