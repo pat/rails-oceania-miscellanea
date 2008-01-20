@@ -8,7 +8,7 @@ class Suburbs < Application
   def show(id)
     @localities = Locality.find(
       :all,
-      :conditions => "suburb LIKE '%#{unescape(id)}%'"
+      :conditions => ["suburb LIKE '%?%'", unescape(id)]
     )
     render @localities
   end
