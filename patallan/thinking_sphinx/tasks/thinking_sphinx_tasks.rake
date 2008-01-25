@@ -9,7 +9,7 @@ namespace :thinking_sphinx do
     
     Dir["#{config.searchd_file_path}/*.spl"].each { |file| File.delete(file) }
     
-    cmd = "searchd --config #{RAILS_ROOT}/config/#{RAILS_ENV}.sphinx.conf"
+    cmd = "searchd --config #{config.config_file}"
     puts cmd
     system cmd
     
@@ -18,7 +18,7 @@ namespace :thinking_sphinx do
     if sphinx_running?
       puts "Started successfully (pid #{sphinx_pid})."
     else
-      puts "Failed to start searchd daemon. Check log/searchd.log."
+      puts "Failed to start searchd daemon. Check #{config.searchd_log_file}."
     end
   end
   
@@ -39,7 +39,7 @@ namespace :thinking_sphinx do
     config = ThinkingSphinx::Configuration.new
     
     FileUtils.mkdir_p config.searchd_file_path
-    cmd = "indexer --config #{RAILS_ROOT}/config/#{RAILS_ENV}.sphinx.conf --all"
+    cmd = "indexer --config #{config.config_file} --all"
     cmd << " --rotate" if sphinx_running?
     puts cmd
     system cmd
