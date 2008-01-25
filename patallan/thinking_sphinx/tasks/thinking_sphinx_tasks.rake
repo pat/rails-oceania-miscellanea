@@ -2,10 +2,12 @@ require 'fileutils'
 
 namespace :thinking_sphinx do
   task :start => :environment do
-    FileUtils.mkdir_p "#{RAILS_ROOT}/db/sphinx/#{RAILS_ENV}"
+    config = ThinkingSphinx::Configuration.new
+    
+    FileUtils.mkdir_p config.searchd_file_path
     raise RuntimeError, "searchd is already running." if sphinx_running?
     
-    Dir["#{RAILS_ROOT}/db/sphinx/#{RAILS_ENV}/*.spl"].each { |file| File.delete(file) }
+    Dir["#{config.searchd_file_path}/*.spl"].each { |file| File.delete(file) }
     
     cmd = "searchd --config #{RAILS_ROOT}/config/#{RAILS_ENV}.sphinx.conf"
     puts cmd
@@ -34,7 +36,9 @@ namespace :thinking_sphinx do
   end
   
   task :index => [:environment, :configure] do
-    FileUtils.mkdir_p "#{RAILS_ROOT}/db/sphinx/#{RAILS_ENV}"
+    config = ThinkingSphinx::Configuration.new
+    
+    FileUtils.mkdir_p config.searchd_file_path
     cmd = "indexer --config #{RAILS_ROOT}/config/#{RAILS_ENV}.sphinx.conf --all"
     cmd << " --rotate" if sphinx_running?
     puts cmd
@@ -52,8 +56,10 @@ namespace :ts do
 end
 
 def sphinx_pid
-  if File.exists?("#{RAILS_ROOT}/log/searchd.#{RAILS_ENV}.pid")
-    `cat #{RAILS_ROOT}/log/searchd.#{RAILS_ENV}.pid`[/\d+/]
+  config = ThinkingSphinx::Configuration.new
+  
+  if File.exists?(config.pid_file)
+    `cat #{config.pid_file}`[/\d+/]
   else
     nil
   end
