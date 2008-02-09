@@ -70,6 +70,9 @@ require 'thinking_sphinx/index'
 # grouping.
 #
 module ThinkingSphinx
+  class ConnectionError < StandardError #:nodoc:
+  end
+  
   def self.indexed_models
     @@indexed_models ||= []
   end

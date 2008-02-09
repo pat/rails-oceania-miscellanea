@@ -107,12 +107,19 @@ module ThinkingSphinx
               sphinx.sort_by    = options[:order]
             end
             
+            %w( max_matches sort_mode sort_by weights id_range filters group_by
+              group_function group_clause group_distinct cut_off retry_count
+              retry_delay anchor index_weights rank_mode max_query_time
+              field_weights ).each do |key|
+              sphinx.send "#{key}=".to_sym, options[key.to_sym] if options[key.to_sym]
+            end
+            
             begin
               query = "#{str} @class #{self.name}"
               logger.debug "Sphinx: #{query}"
               results = sphinx.query query
             rescue Errno::ECONNREFUSED => err
-              raise Riddle::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
+              raise ThinkingSphinx::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
             end
             
             begin
