@@ -38,13 +38,13 @@ module ThinkingSphinx
     def select_clause
       return @column if @column.is_a?(String)
       
-      clause = Array(@column).collect { |col| "#{self.prefix}.#{col}" }.join(", ")
+      clause = Array(@column).collect { |col| "`#{self.prefix}`.`#{col}`" }.join(", ")
       clause = "CONCAT_WS(' ', #{clause})" if @column.is_a?(Array)
       
       if self.many?
-        "CAST(GROUP_CONCAT(#{clause} SEPARATOR ' ') AS CHAR) AS #{self.unique_name}"
+        "CAST(GROUP_CONCAT(#{clause} SEPARATOR ' ') AS CHAR) AS `#{self.unique_name}`"
       else
-        "CAST(#{clause} AS CHAR) AS #{self.unique_name}"
+        "CAST(#{clause} AS CHAR) AS `#{self.unique_name}`"
       end
     end
     
