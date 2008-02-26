@@ -11,6 +11,8 @@ module ThinkingSphinx
   module ActiveRecord
     def self.included(base)
       base.class_eval do
+        define_callbacks "after_commit" if respond_to?(:define_callbacks)
+        
         class << self
           attr_accessor :indexes
           
