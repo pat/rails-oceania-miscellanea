@@ -26,15 +26,17 @@ module Riddle
   #
   class Client
     Commands = {
-      :search  => 0, # SEARCHD_COMMAND_SEARCH
-      :excerpt => 1, # SEARCHD_COMMAND_EXCERPT
-      :update  => 2  # SEARCHD_COMMAND_UPDATE
+      :search   => 0, # SEARCHD_COMMAND_SEARCH
+      :excerpt  => 1, # SEARCHD_COMMAND_EXCERPT
+      :update   => 2, # SEARCHD_COMMAND_UPDATE
+      :keywords => 3  # SEARCHD_COMMAND_KEYWORDS
     }
     
     Versions = {
-      :search  => 0x112, # VER_COMMAND_SEARCH
-      :excerpt => 0x100, # VER_COMMAND_EXCERPT
-      :update  => 0x101  # VER_COMMAND_UPDATE
+      :search   => 0x113, # VER_COMMAND_SEARCH
+      :excerpt  => 0x100, # VER_COMMAND_EXCERPT
+      :update   => 0x101, # VER_COMMAND_UPDATE
+      :keywords => 0x100  # VER_COMMAND_KEYWORDS
     }
     
     Statuses = {
@@ -137,24 +139,29 @@ module Riddle
     end
     
     # Set the geo-anchor point - with the names of the attributes that contain
-    # the latitude and longtitude, and the reference position.
+    # the latitude and longitude (in radians), and the reference position.
+    # Note that for geocoding to work properly, you must also set
+    # match_mode to :extended. To sort results by distance, you will
+    # need to set sort_mode to '@geodist asc' for example. Sphinx
+    # expects latitude and longitude to be returned from you SQL source
+    # in radians.
     #
     # Example:
-    #   client.set_anchor('lat', -37.767899, 'lon', 145.002451)
+    #   client.set_anchor('lat', -0.6591741, 'long', 2.530770)
     #
     def set_anchor(lat_attr, lat, long_attr, long)
       @anchor = {
         :latitude_attribute   => lat_attr,
         :latitude             => lat,
-        :longtitude_attribute => long_attr,
-        :longtitude           => long
+        :longitude_attribute  => long_attr,
+        :longitude            => long
       }
     end
     
     # Append a query to the queue. This uses the same parameters as the query
     # method.
-    def append_query(search, index = '*')
-      @queue << query_message(search, index)
+    def append_query(search, index = '*', comments = '')
+      @queue << query_message(search, index, comments)
     end
     
     # Run all the queries currently in the queue. This will return an array of
@@ -270,12 +277,15 @@ module Riddle
     # related warning, it will be under the <tt>:warning</tt> key. Fatal errors
     # will be described under <tt>:error</tt>.
     #
-    def query(search, index = '*')      
-      @queue << query_message(search, index)
+    def query(search, index = '*', comments = '')
+      @queue << query_message(search, index, comments)
       self.run.first
     end
     
-    # Grab excerpts from the indexes. As part of the options, you will need to
+    # Build excerpts from search terms (the +words+) and the text of documents. Excerpts are bodies of text that have the +words+ highlighted.
+    # They may also be abbreviated to fit within a word limit.
+    #
+    # As part of the options hash, you will need to
     # define:
     # * :docs
     # * :words
@@ -292,6 +302,31 @@ module Riddle
     #
     # The defaults differ from the official PHP client, as I've opted for
     # semantic HTML markup.
+    #
+    # Example:
+    #
+    #   client.excerpts(:docs => ["Pat Allan, Pat Cash"], :words => 'Pat', :index => 'pats')
+    #   #=> ["<span class=\"match\">Pat</span> Allan, <span class=\"match\">Pat</span> Cash"]
+    #
+    #   lorem_lipsum = "Lorem ipsum dolor..."
+    #
+    #   client.excerpts(:docs => ["Pat Allan, #{lorem_lipsum} Pat Cash"], :words => 'Pat', :index => 'pats')
+    #   #=> ["<span class=\"match\">Pat</span> Allan, Lorem ipsum dolor sit amet, consectetur adipisicing
+    #          elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua &#8230; . Excepteur 
+    #          sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est 
+    #          laborum. <span class=\"match\">Pat</span> Cash"]  
+    #
+    # Workflow:
+    #
+    # Excerpt creation is completely isolated from searching the index. The nominated index is only used to 
+    # discover encoding and charset information.
+    #
+    # Therefore, the workflow goes:
+    #
+    # 1. Do the sphinx query.
+    # 2. Fetch the documents found by sphinx from their repositories.
+    # 3. Pass the documents' text to +excerpts+ for marking up of matched terms.
+    #
     def excerpts(options = {})
       options[:index]           ||= '*'
       options[:before_match]    ||= '<span class="match">'
@@ -323,6 +358,30 @@ module Riddle
       )
       
       response.next_int
+    end
+    
+    # Generates a keyword list for a given query. Each keyword is represented
+    # by a hash, with keys :tokenised and :normalised. If return_hits is set to
+    # true it will also report on the number of hits and documents for each
+    # keyword (see :hits and :docs keys respectively).
+    def keywords(query, index, return_hits = false)
+      response = Response.new request(
+        :keywords,
+        keywords_message(query, index, return_hits)
+      )
+      
+      (0...response.next_int).collect do
+        hash = {}
+        hash[:tokenised]  = response.next
+        hash[:normalised] = response.next
+        
+        if return_hits
+          hash[:docs] = response.next_int
+          hash[:hits] = response.next_int
+        end
+        
+        hash
+      end
     end
     
     private
@@ -406,7 +465,7 @@ module Riddle
     end
     
     # Generation of the message to send to Sphinx for a search.
-    def query_message(search, index)
+    def query_message(search, index, comments = '')
       message = Message.new
       
       # Mode, Limits, Sort Mode
@@ -446,8 +505,8 @@ module Riddle
       else
         message.append_int 1
         message.append_string @anchor[:latitude_attribute]
-        message.append_string @anchor[:longtitude_attribute]
-        message.append_floats @anchor[:latitude], @anchor[:longtitude]
+        message.append_string @anchor[:longitude_attribute]
+        message.append_floats @anchor[:latitude], @anchor[:longitude]
       end
       
       # Per Index Weights
@@ -466,6 +525,8 @@ module Riddle
         message.append_string key
         message.append_int val
       end
+      
+      message.append_string comments
       
       message.to_s
     end
@@ -508,6 +569,17 @@ module Riddle
         message.append_64bit_int key # document ID
         message.append_ints *values # array of new values (integers)
       end
+      
+      message.to_s
+    end
+    
+    # Generates the simple message to send to the daemon for a keywords request.
+    def keywords_message(query, index, return_hits)
+      message = Message.new
+      
+      message.append_string query
+      message.append_string index
+      message.append_int return_hits ? 1 : 0
       
       message.to_s
     end
