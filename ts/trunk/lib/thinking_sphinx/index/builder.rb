@@ -2,6 +2,12 @@ module ThinkingSphinx
   class Index
     class Builder
       class << self
+        # No idea where this is coming from - haven't found it in any
+        # documentation. It's not needed though, so it gets undef'd.
+        # Hopefully the list of methods that get in the way doesn't get
+        # too long.
+        undef_method :parent
+        
         attr_accessor :fields, :attributes, :properties, :conditions
         
         def setup

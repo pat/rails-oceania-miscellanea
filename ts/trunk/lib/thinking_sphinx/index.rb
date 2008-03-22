@@ -16,6 +16,26 @@ module ThinkingSphinx
       initialize_from_builder(&block) if block_given?
     end
     
+    # Link all the fields and associations to their corresponding
+    # associations and joins. This _must_ be called before interrogating
+    # the index's fields and associations for anything that may reference
+    # their SQL structure.
+    def link!
+      @fields.each { |field|
+        field.model ||= @model
+        field.columns.each { |col|
+          field.associations[col] ||= associations(col.__stack)
+          field.associations[col].each { |assoc| assoc.join_to(base) }
+        }
+      }
+      
+      @attributes.each { |attribute|
+        attribute.model ||= @model
+        attribute.associations ||= associations(attribute.column.__stack)
+        attribute.associations.each { |assoc| assoc.join_to(base) }
+      }
+    end
+    
     def to_sql(options={})
       base = ::ActiveRecord::Associations::ClassMethods::JoinDependency.new(
         @model, [], nil
@@ -84,26 +104,17 @@ GROUP BY #{ (
     end
     
     def all_associations(base)
-      top_assocs = []
-      
-      # Create all the association objects and joins
-      # - from fields
-      top_assocs += @fields.collect { |field|
-        field.model ||= @model
-        field.columns.collect { |col|
-          field.associations[col] ||= associations(col.__stack)
-          field.associations[col].each { |assoc| assoc.join_to(base) }
+      @all_associations ||= (
+        # field associations
+        @fields.collect { |field|
+          field.associations.values
+        }.flatten +
+        # attribute associations
+        @attributes.collect { |attrib|
+          attrib.associations
         }.flatten
-      }.flatten
-      
-      # - from associations
-      top_assocs += @attributes.collect { |attribute|
-        attribute.model ||= @model
-        attribute.associations ||= associations(attribute.column.__stack)
-        attribute.associations.each { |assoc| assoc.join_to(base) }
-      }.flatten
-      
-      top_assocs.uniq!.collect { |assoc|
+      ).uniq.collect { |assoc|
+        # get ancestors as well as column-level associations
         assoc.ancestors
       }.flatten.uniq
     end

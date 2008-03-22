@@ -82,6 +82,9 @@ searchd
           infixed_fields  = []
           
           model.indexes.each_with_index do |index, i|
+            # Set up associations and joins
+            index.link!
+            
             attr_sources = index.attributes.collect { |attrib|
               attrib.to_sphinx_clause
             }.join("\n  ")
