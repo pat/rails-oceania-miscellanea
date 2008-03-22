@@ -35,7 +35,7 @@ module ThinkingSphinx
       
       @attributes.each { |attribute|
         attribute.model ||= @model
-        attribute.associations ||= associations(attribute.column.__stack)
+        attribute.associations = associations(attribute.column.__stack)
         attribute.associations.each { |assoc| assoc.join_to(base) }
       }
     end

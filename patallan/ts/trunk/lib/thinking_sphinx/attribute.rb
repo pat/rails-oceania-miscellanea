@@ -32,7 +32,7 @@ module ThinkingSphinx
     def to_sphinx_clause
       case column_type
       when :multi
-        "sql_attr_multi = uint #{unique_name} from field #{unique_name}"
+        "sql_attr_multi = uint #{unique_name} from field"
       when :datetime
         "sql_attr_timestamp = #{unique_name}"
       when :string

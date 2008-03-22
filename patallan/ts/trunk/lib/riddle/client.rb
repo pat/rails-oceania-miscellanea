@@ -78,7 +78,7 @@ module Riddle
       :ordinal    => 3, # SPH_ATTR_ORDINAL
       :bool       => 4, # SPH_ATTR_BOOL
       :float      => 5, # SPH_ATTR_FLOAT
-      :multi      => 0x40000000 # SPH_ATTR_MULTI
+      :multi      => 0x40000001 # SPH_ATTR_MULTI
     }
     
     GroupFunctions = {
