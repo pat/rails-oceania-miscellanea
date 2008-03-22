@@ -70,7 +70,7 @@ module ThinkingSphinx
       if @associations.length > 1 || is_many?
         :multi
       else
-        klass = @associations.first ? @associations.first.klass : @model
+        klass = @associations.first ? @associations.first.reflection.klass : @model
         klass.columns.detect { |col| col.name == @column.__name.to_s }.type
       end
     end
