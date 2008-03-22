@@ -18,6 +18,8 @@ module ThinkingSphinx
       
       if is_many?
         "CAST(GROUP_CONCAT(#{clause} SEPARATOR ',') AS CHAR) AS `#{unique_name}`"
+      elsif column_type == :datetime
+        "UNIX_TIMESTAMP(#{clause}) AS `#{unique_name}`"
       else
         "#{clause} AS `#{unique_name}`"
       end
@@ -28,23 +30,19 @@ module ThinkingSphinx
     end
     
     def to_sphinx_clause
-      if @associations.length > 1 || is_many?
+      case column_type
+      when :multi
         "sql_attr_multi = uint #{unique_name} from field #{unique_name}"
+      when :datetime
+        "sql_attr_timestamp = #{unique_name}"
+      when :string
+        "sql_attr_str2ordinal = #{unique_name}"
+      when :float
+        "sql_attr_float = #{unique_name}"
+      when :boolean
+        "sql_attr_bool = #{unique_name}"
       else
-        klass = @associations.first ? @associations.first.klass : @model
-        model_column = klass.columns.detect { |col| col.name == @column.__name }
-        case model_column.type
-        when :datetime
-          "sql_attr_timestamp = #{unique_name}"
-        when :string
-          "sql_attr_str2ordinal = #{unique_name}"
-        when :float
-          "sql_attr_float = #{unique_name}"
-        when :boolean
-          "sql_attr_bool = #{unique_name}"
-        else
-          "sql_attr_uint = #{unique_name}"
-        end
+        "sql_attr_uint = #{unique_name}"
       end
     end
     
@@ -66,6 +64,15 @@ module ThinkingSphinx
     
     def is_many?
       associations.any? { |assoc| assoc.is_many? }
+    end
+    
+    def column_type
+      if @associations.length > 1 || is_many?
+        :multi
+      else
+        klass = @associations.first ? @associations.first.klass : @model
+        klass.columns.detect { |col| col.name == @column.__name.to_s }.type
+      end
     end
   end
 end
