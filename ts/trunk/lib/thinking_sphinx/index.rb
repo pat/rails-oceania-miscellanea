@@ -21,6 +21,10 @@ module ThinkingSphinx
     # the index's fields and associations for anything that may reference
     # their SQL structure.
     def link!
+      base = ::ActiveRecord::Associations::ClassMethods::JoinDependency.new(
+        @model, [], nil
+      )
+      
       @fields.each { |field|
         field.model ||= @model
         field.columns.each { |col|
@@ -37,10 +41,7 @@ module ThinkingSphinx
     end
     
     def to_sql(options={})
-      base = ::ActiveRecord::Associations::ClassMethods::JoinDependency.new(
-        @model, [], nil
-      )
-      assocs = all_associations(base)
+      assocs = all_associations
       
       where_clause = ""
       if self.delta?
@@ -103,7 +104,7 @@ GROUP BY #{ (
       @delta      = builder.properties[:delta]
     end
     
-    def all_associations(base)
+    def all_associations
       @all_associations ||= (
         # field associations
         @fields.collect { |field|
