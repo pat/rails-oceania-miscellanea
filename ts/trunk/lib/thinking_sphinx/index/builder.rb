@@ -24,7 +24,8 @@ module ThinkingSphinx
             fields << Field.new(columns, options)
           end
         end
-        alias_method :field, :indexes
+        alias_method :field,    :indexes
+        alias_method :includes, :indexes
         
         def has(*args)
           options = args.extract_options!
