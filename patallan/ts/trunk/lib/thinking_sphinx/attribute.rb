@@ -1,24 +1,27 @@
 module ThinkingSphinx
   class Attribute
-    attr_accessor :alias, :column, :associations, :model
+    attr_accessor :alias, :columns, :associations, :model
     
-    def initialize(column, options)
-      @column       = column
-      @associations = []
+    def initialize(columns, options)
+      @columns      = Array(columns)
+      @associations = {}
       
       @alias        = options[:as]
+      @type         = options[:type]
     end
     
     def to_select_sql
-      clause = column_with_prefix
+      clause = @columns.collect { |column|
+        column_with_prefix(column)
+      }.join(', ')
       
-      if associations.length > 1
-        clause = "CONCAT_WS(',', #{clause})"
+      if associations.values.flatten.length > 1
+        clause = "CONCAT_WS(' ', #{clause})"
       end
       
       if is_many?
         "CAST(GROUP_CONCAT(#{clause} SEPARATOR ',') AS CHAR) AS `#{unique_name}`"
-      elsif column_type == :datetime
+      elsif type == :datetime
         "UNIX_TIMESTAMP(#{clause}) AS `#{unique_name}`"
       else
         "#{clause} AS `#{unique_name}`"
@@ -26,11 +29,13 @@ module ThinkingSphinx
     end
     
     def to_group_sql
-      is_many? ? nil : column_with_prefix
+      is_many? ? nil : @columns.collect { |column|
+        column_with_prefix(column)
+      }
     end
     
     def to_sphinx_clause
-      case column_type
+      case type
       when :multi
         "sql_attr_multi = uint #{unique_name} from field"
       when :datetime
@@ -49,29 +54,39 @@ module ThinkingSphinx
     private
     
     def unique_name
-      @alias || @column.__name
+      if @columns.length == 1
+        @alias || @columns.first.__name
+      else
+        @alias
+      end
     end
     
-    def column_with_prefix
-      if associations.empty?
-        "`#{@model.table_name}`.`#{@column.__name}`"
+    def column_with_prefix(column)
+      if associations[column].empty?
+        "`#{@model.table_name}`.`#{column.__name}`"
       else
-        associations.collect { |assoc|
-          "`#{assoc.join.aliased_table_name}`.`#{@column.__name}`"
+        associations[column].collect { |assoc|
+          "`#{assoc.join.aliased_table_name}`.`#{column.__name}`"
         }.join(', ')
       end
     end
     
     def is_many?
-      associations.any? { |assoc| assoc.is_many? }
+      associations.values.flatten.any? { |assoc| assoc.is_many? }
     end
     
-    def column_type
-      if @associations.length > 1 || is_many?
+    def type
+      @type ||= case
+      when is_many?
         :multi
+      when @associations.values.flatten.length > 1
+        :string
       else
-        klass = @associations.first ? @associations.first.reflection.klass : @model
-        klass.columns.detect { |col| col.name == @column.__name.to_s }.type
+        klass = @associations.values.flatten.first ? 
+          @associations.values.flatten.first.reflection.klass : @model
+        klass.columns.detect { |col|
+          @columns.collect { |c| c.__name.to_s }.include? col.name
+        }.type
       end
     end
   end
