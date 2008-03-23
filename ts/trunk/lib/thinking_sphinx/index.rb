@@ -28,15 +28,17 @@ module ThinkingSphinx
       @fields.each { |field|
         field.model ||= @model
         field.columns.each { |col|
-          field.associations[col] ||= associations(col.__stack)
+          field.associations[col] = associations(col.__stack.clone)
           field.associations[col].each { |assoc| assoc.join_to(base) }
         }
       }
       
       @attributes.each { |attribute|
         attribute.model ||= @model
-        attribute.associations = associations(attribute.column.__stack)
-        attribute.associations.each { |assoc| assoc.join_to(base) }
+        attribute.columns.each { |col|
+          attribute.associations[col] = associations(col.__stack.clone)
+          attribute.associations[col].each { |assoc| assoc.join_to(base) }
+        }
       }
     end
     
@@ -112,7 +114,7 @@ GROUP BY #{ (
         }.flatten +
         # attribute associations
         @attributes.collect { |attrib|
-          attrib.associations
+          attrib.associations.values
         }.flatten
       ).uniq.collect { |assoc|
         # get ancestors as well as column-level associations

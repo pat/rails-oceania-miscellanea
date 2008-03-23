@@ -22,6 +22,16 @@ module ThinkingSphinx
           args.each do |columns|
             columns = FauxColumn.new(columns) if columns.is_a?(Symbol)
             fields << Field.new(columns, options)
+            
+            if fields.last.sortable
+              attributes << Attribute.new(
+                columns.collect { |col| col.clone },
+                options.merge(
+                  :type => :string,
+                  :as => fields.last.unique_name.to_s.concat("_sort").to_sym
+                )
+              )
+            end
           end
         end
         alias_method :field,    :indexes
@@ -29,9 +39,9 @@ module ThinkingSphinx
         
         def has(*args)
           options = args.extract_options!
-          args.each do |column|
-            column = FauxColumn.new(column) if column.is_a?(Symbol)
-            attributes << Attribute.new(column, options)
+          args.each do |columns|
+            column = FauxColumn.new(columns) if columns.is_a?(Symbol)
+            attributes << Attribute.new(columns, options)
           end
         end
         alias_method :attribute, :has
