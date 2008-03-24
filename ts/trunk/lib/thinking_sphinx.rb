@@ -1,5 +1,6 @@
 require 'active_record'
 
+require 'thinking_sphinx/active_record'
 require 'thinking_sphinx/association'
 require 'thinking_sphinx/attribute'
 require 'thinking_sphinx/field'
@@ -8,7 +9,7 @@ require 'thinking_sphinx/index'
 module ThinkingSphinx
   module Version
     Major = 0
-    Minor = 2
+    Minor = 5
     Tiny  = 0
     
     String = [Major, Minor, Tiny].join('.')
