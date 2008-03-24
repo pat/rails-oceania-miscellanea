@@ -51,8 +51,6 @@ module ThinkingSphinx
       end
     end
     
-    private
-    
     def unique_name
       if @columns.length == 1
         @alias || @columns.first.__name
@@ -60,6 +58,8 @@ module ThinkingSphinx
         @alias
       end
     end
+    
+    private
     
     def column_with_prefix(column)
       if associations[column].empty?

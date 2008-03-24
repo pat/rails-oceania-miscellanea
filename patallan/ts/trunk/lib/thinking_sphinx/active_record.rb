@@ -1,18 +1,14 @@
+require 'thinking_sphinx/active_record/delta'
+require 'thinking_sphinx/active_record/search'
+
 module ThinkingSphinx
-  # Additions to ActiveRecord models - define_index for creating indexes for
-  # models, and search for querying Sphinx. If you want to interrogate the
-  # index objects created for the model, you can use the class-level accessor
-  # :indexes.
-  #
-  # Code for after_commit callback is written by Eli Miller:
-  # http://elimiller.blogspot.com/2007/06/proper-cache-expiry-with-aftercommit.html
-  # with slight modification from Joost Hietbrink.
+  # Core additions to ActiveRecord models - define_index for creating indexes
+  # for models. If you want to interrogate the index objects created for the
+  # model, you can use the class-level accessor :indexes.
   #
   module ActiveRecord
     def self.included(base)
       base.class_eval do
-        define_callbacks "after_commit" if respond_to?(:define_callbacks)
-        
         class << self
           attr_accessor :indexes
           
@@ -79,134 +75,11 @@ module ThinkingSphinx
             index
           end
           alias_method :sphinx_index, :define_index
-
-          # Searches for results that match the parameters provided. Will only
-          # return the ids for the matching objects. See #search for syntax
-          # examples.
-          #
-          def search_for_ids(*args)
-            case args.first
-            when String
-              str     = args[0]
-              options = args[1] || {}
-            when Hash
-              options = args[0]
-              str     = options[:conditions]
-            end
-            
-            str = str.merge(:class => self.name).collect { |key,value|
-              value.blank? ? nil : "@#{key} #{value}"
-            }.compact.uniq.join(" ") if str.is_a?(Hash)
-            page = options[:page].nil? ? 1 : options[:page].to_i
-            
-            configuration     = ThinkingSphinx::Configuration.new
-            sphinx            = Riddle::Client.new
-            sphinx.port       = configuration.port
-            sphinx.match_mode = options[:match_mode] || :extended
-            
-            sphinx.limit      = options[:limit] || sphinx.limit
-            sphinx.limit      = options[:per_page].to_i unless options[:per_page].nil?
-            sphinx.offset     = (page - 1) * sphinx.limit
-            
-            if options[:order]
-              sphinx.sort_mode  = :extended
-              sphinx.sort_by    = options[:order]
-            end
-            
-            %w( max_matches sort_mode sort_by weights id_range filters group_by
-              group_function group_clause group_distinct cut_off retry_count
-              retry_delay anchor index_weights rank_mode max_query_time
-              field_weights ).each do |key|
-              sphinx.send "#{key}=".to_sym, options[key.to_sym] if options[key.to_sym]
-            end
-            
-            begin
-              query = str
-              logger.debug "Sphinx: #{query}"
-              results = sphinx.query query, self.name.downcase
-            rescue Errno::ECONNREFUSED => err
-              raise ThinkingSphinx::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
-            end
-            
-            begin
-              pager = WillPaginate::Collection.new(page,
-                sphinx.limit, results[:total])
-              pager.replace results[:matches].collect { |match| match[:doc] }
-            rescue
-              results[:matches].collect { |match| match[:doc] }
-            end
-          end
-          
-          # Searches for results that match the parameters provided. These
-          # parameter keys should match the names of fields in the indexes.
-          #
-          # This will use WillPaginate for results if the plugin is installed.
-          # The same parameters - :page and :per_page - work as expected, and
-          # the returned result set can be used by the will_paginate helper.
-          #
-          # Please use only specified attributes when ordering results -
-          # anything else will make the query fall over.
-          #
-          # Examples:
-          #
-          #   Invoice.search :conditions => {:customer => "Pat"}
-          #   Invoice.search "Pat" # search all fields
-          #   Invoice.search "Pat", :page => (params[:page] || 1)
-          #   Invoice.search "Pat", :order => "created_at ASC"
-          #   Invoice.search "Pat", :include => :line_items
-          #
-          def search(*args)
-            ids = search_for_ids(*args)
-            options = args.extract_options!
-            ids.replace ids.collect { |id|
-              find id, :include => options[:include] rescue nil
-            }.compact
-          end
-          
-          def after_commit(*callbacks, &block)
-            callbacks << block if block_given?
-            write_inheritable_array(:after_commit, callbacks)
-          end
-        end
-        
-        def save_with_after_commit_callback(*args)
-          value = save_without_after_commit_callback(*args)
-          callback(:after_commit) if value
-          return value
-        end
-        
-        alias_method_chain :save, :after_commit_callback
-
-        def save_with_after_commit_callback!(*args)
-          value = save_without_after_commit_callback!(*args)
-          callback(:after_commit) if value
-          return value
-        end
-        
-        alias_method_chain :save!, :after_commit_callback
-
-        def destroy_with_after_commit_callback
-          value = destroy_without_after_commit_callback
-          callback(:after_commit) if value
-          return value
-        end
-        
-        alias_method_chain :destroy, :after_commit_callback
-        
-        private
-        
-        def toggle_delta
-          self.delta = true
-        end
-        
-        def index_delta
-          unless RAILS_ENV == "test"
-            configuration = ThinkingSphinx::Configuration.new
-            system "indexer --config #{configuration.config_file} --rotate #{self.class.name.downcase}_delta"
-          end
-          true
         end
       end
+      
+      base.send(:include, ThinkingSphinx::ActiveRecord::Delta)
+      base.send(:include, ThinkingSphinx::ActiveRecord::Search)
     end
   end
 end

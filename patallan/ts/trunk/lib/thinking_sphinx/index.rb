@@ -3,7 +3,7 @@ require 'thinking_sphinx/index/faux_column'
 
 module ThinkingSphinx
   class Index
-    attr_accessor :model, :fields, :attributes, :conditions, :delta
+    attr_accessor :model, :fields, :attributes, :conditions, :delta, :options
     
     def initialize(model, &block)
       @model        = model
@@ -11,6 +11,7 @@ module ThinkingSphinx
       @fields       = []
       @attributes   = []
       @conditions   = []
+      @options      = {}
       @delat        = false
       
       initialize_from_builder(&block) if block_given?
@@ -104,6 +105,7 @@ GROUP BY #{ (
       @attributes = builder.attributes
       @conditions = builder.conditions
       @delta      = builder.properties[:delta]
+      @options    = builder.properties.except(:delta)
     end
     
     def all_associations
