@@ -84,6 +84,8 @@ module ThinkingSphinx
                 )
               end
               
+              client.anchor = anchor_conditions(options) if client.anchor.empty?
+              
               client
             end
             
@@ -107,6 +109,44 @@ module ThinkingSphinx
               end
               
               return search_string, filters
+            end
+            
+            def anchor_conditions(options)
+              attributes = indexes.collect { |index|
+                index.attributes.collect { |attrib| attrib.unique_name }
+              }.flatten
+              
+              lat_attr = indexes.collect { |index|
+                index.options[:latitude_attr]
+              }.compact.first
+              
+              lon_attr = indexes.collect { |index|
+                index.options[:longitude_attr]
+              }
+              
+              lat_attr = options[:latitude_attr] if options[:latitude_attr]
+              lat_attr ||= :lat       if attributes.include?(:lat)
+              lat_attr ||= :latitude  if attributes.include?(:latitude)
+              
+              lon_attr = options[:longitude_attr] if options[:longitude_attr]
+              lon_attr ||= :lon       if attributes.include?(:lon)
+              lon_attr ||= :long      if attributes.include?(:long)
+              lon_attr ||= :longitude if attributes.include?(:longitude)
+              
+              lat = options[:lat]
+              lon = options[:lon]
+              
+              if options[:geo]
+                lat = options[:geo].first
+                lon = options[:geo].last
+              end
+              
+              lat && lon ? {
+                :latitude_attribute   => lat_attr,
+                :latitude             => lat,
+                :longitude_attribute  => lon_attr,
+                :longitude            => lon
+              } : nil
             end
             
             def set_sort_options!(client, options)
