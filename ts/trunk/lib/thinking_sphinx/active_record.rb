@@ -75,6 +75,17 @@ module ThinkingSphinx
             index
           end
           alias_method :sphinx_index, :define_index
+          
+          def to_crc32
+            result = 0xFFFFFFFF
+            self.name.each_byte do |byte|
+              result ^= byte
+              8.times do
+                result = (result >> 1) ^ (0xEDB88320 * (result & 1))
+              end
+            end
+            result ^ 0xFFFFFFFF
+          end
         end
       end
       
