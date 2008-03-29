@@ -10,33 +10,9 @@ module ThinkingSphinx
             #
             def search_for_ids(*args)
               options = args.extract_options!
-              client  = client_from_options options
-              
-              query, filters    = search_conditions(options[:conditions] || {})
-              client.filters   += filters
-              client.match_mode = :extended unless query.empty?
-              query             = args.join(" ") + query
-              
-              set_sort_options! client, options
-              
-              client.limit  = options[:per_page].to_i if options[:per_page]
-              page          = options[:page] ? options[:page].to_i : 1
-              client.offset = (page - 1) * client.limit
-
-              begin
-                logger.debug "Sphinx: #{query}"
-                results = client.query query, self.name.downcase
-              rescue Errno::ECONNREFUSED => err
-                raise ThinkingSphinx::ConnectionError, "Connection to Sphinx Daemon (searchd) failed."
-              end
-
-              begin
-                pager = WillPaginate::Collection.new(page,
-                  client.limit, results[:total])
-                pager.replace results[:matches].collect { |match| match[:doc] }
-              rescue
-                results[:matches].collect { |match| match[:doc] }
-              end
+              options[:class] = self
+              args << options
+              ThinkingSphinx::Search.search_for_ids(*args)
             end
 
             # Searches for results that match the parameters provided. These
@@ -58,126 +34,10 @@ module ThinkingSphinx
             #   Invoice.search "Pat", :include => :line_items
             #
             def search(*args)
-              ids = search_for_ids(*args.clone)
               options = args.extract_options!
-              
-              ids.replace ids.collect { |id|
-                find id, :include => options[:include] rescue nil
-              }.compact
-            end
-            
-            private
-            
-            def client_from_options(options)
-              config = ThinkingSphinx::Configuration.new
-              client = Riddle::Client.new "localhost", config.port
-              
-              [
-                :max_matches, :sort_mode, :sort_by, :id_range, :group_by,
-                :group_function, :group_clause, :group_distinct, :cut_off,
-                :retry_count, :retry_delay, :index_weights, :rank_mode,
-                :max_query_time, :field_weights, :filters, :anchor, :limit
-              ].each do |key|
-                client.send(
-                  key.to_s.concat("=").to_sym,
-                  options[key] || indexes.last.options[key] || client.send(key)
-                )
-              end
-              
-              client.anchor = anchor_conditions(options) if client.anchor.empty?
-              
-              client
-            end
-            
-            def search_conditions(conditions)
-              attributes = indexes.collect { |index|
-                index.attributes.collect { |attrib| attrib.unique_name }
-              }.flatten
-              
-              search_string = ""
-              filters       = []
-              
-              conditions.each do |key,val|
-                if attributes.include?(key.to_sym)
-                  filters << Riddle::Client::Filter.new(
-                    key.to_s,
-                    val.is_a?(Range) ? val : Array(val)
-                  )
-                else
-                  search_string << "@#{key} #{val} "
-                end
-              end
-              
-              return search_string, filters
-            end
-            
-            def anchor_conditions(options)
-              attributes = indexes.collect { |index|
-                index.attributes.collect { |attrib| attrib.unique_name }
-              }.flatten
-              
-              lat_attr = indexes.collect { |index|
-                index.options[:latitude_attr]
-              }.compact.first
-              
-              lon_attr = indexes.collect { |index|
-                index.options[:longitude_attr]
-              }
-              
-              lat_attr = options[:latitude_attr] if options[:latitude_attr]
-              lat_attr ||= :lat       if attributes.include?(:lat)
-              lat_attr ||= :latitude  if attributes.include?(:latitude)
-              
-              lon_attr = options[:longitude_attr] if options[:longitude_attr]
-              lon_attr ||= :lon       if attributes.include?(:lon)
-              lon_attr ||= :long      if attributes.include?(:long)
-              lon_attr ||= :longitude if attributes.include?(:longitude)
-              
-              lat = options[:lat]
-              lon = options[:lon]
-              
-              if options[:geo]
-                lat = options[:geo].first
-                lon = options[:geo].last
-              end
-              
-              lat && lon ? {
-                :latitude_attribute   => lat_attr,
-                :latitude             => lat,
-                :longitude_attribute  => lon_attr,
-                :longitude            => lon
-              } : nil
-            end
-            
-            def set_sort_options!(client, options)
-              fields = indexes.collect { |index|
-                index.fields.collect { |field| field.unique_name }
-              }.flatten
-              
-              case order = options[:order]
-              when Symbol
-                client.sort_mode = :attr_asc
-                if fields.include?(order)
-                  client.sort_by = order.to_s.concat("_sort")
-                else
-                  client.sort_by = order.to_s
-                end
-              when String
-                client.sort_mode = :extended
-                client.sort_by   = sorted_fields_to_attributes(order, fields)
-              else
-                # do nothing
-              end
-            end
-            
-            def sorted_fields_to_attributes(string, fields)
-              fields.each { |field|
-                string.gsub!(/(^|\s)#{field}(,?\s|$)/) { |match|
-                  match.gsub field.to_s, field.to_s.concat("_sort")
-                }
-              }
-              
-              string
+              options[:class] = self
+              args << options
+              ThinkingSphinx::Search.search(*args)
             end
           end
         end

@@ -5,11 +5,12 @@ require 'thinking_sphinx/association'
 require 'thinking_sphinx/attribute'
 require 'thinking_sphinx/field'
 require 'thinking_sphinx/index'
+require 'thinking_sphinx/search'
 
 module ThinkingSphinx
   module Version
     Major = 0
-    Minor = 5
+    Minor = 8
     Tiny  = 0
     
     String = [Major, Minor, Tiny].join('.')
