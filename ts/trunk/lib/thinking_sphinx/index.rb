@@ -106,6 +106,12 @@ GROUP BY #{ (
       @conditions = builder.conditions
       @delta      = builder.properties[:delta]
       @options    = builder.properties.except(:delta)
+      
+      @attributes << Attribute.new(
+        FauxColumn.new(@model.to_crc32.to_s),
+        :type => :integer,
+        :as   => :class_crc
+      )
     end
     
     def all_associations

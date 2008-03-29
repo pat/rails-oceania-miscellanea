@@ -29,9 +29,14 @@ module ThinkingSphinx
     end
     
     def to_group_sql
-      is_many? ? nil : @columns.collect { |column|
-        column_with_prefix(column)
-      }
+      case
+      when is_many?, is_string?
+        nil
+      else
+        @columns.collect { |column|
+          column_with_prefix(column)
+        }
+      end
     end
     
     def to_sphinx_clause
@@ -62,7 +67,9 @@ module ThinkingSphinx
     private
     
     def column_with_prefix(column)
-      if associations[column].empty?
+      if column.is_string?
+        column.__name
+      elsif associations[column].empty?
         "`#{@model.table_name}`.`#{column.__name}`"
       else
         associations[column].collect { |assoc|
@@ -73,6 +80,10 @@ module ThinkingSphinx
     
     def is_many?
       associations.values.flatten.any? { |assoc| assoc.is_many? }
+    end
+    
+    def is_string?
+      columns.all? { |col| col.is_string? }
     end
     
     def type

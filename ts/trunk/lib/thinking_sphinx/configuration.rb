@@ -170,8 +170,6 @@ index #{model.name.downcase}
       end
     end
     
-    private
-    
     # Make sure all models are loaded
     def load_models
       Dir[RAILS_ROOT + "/app/models/**/*.rb"].each do |file|
@@ -184,6 +182,8 @@ index #{model.name.downcase}
         end
       end
     end
+    
+    private
     
     def parse_config
       path = "#{RAILS_ROOT}/config/sphinx.yml"

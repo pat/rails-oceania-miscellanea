@@ -18,6 +18,10 @@ module ThinkingSphinx
         @stack
       end
       
+      def is_string?
+        @name.is_a?(String) && @stack.empty?
+      end
+      
       def method_missing(method, *args)
         @stack << @name
         @name   = method
