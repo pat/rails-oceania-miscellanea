@@ -1,0 +1,189 @@
+h1. Thinking Sphinx - Usage
+
+h2. Installation
+
+To get everything up and running, you'll need to install *Sphinx*, and then the plugin itself.
+
+h3. Sphinx
+
+Firstly, head on over to the "Sphinx download page":http://sphinxsearch.com/downloads.html. I've never had any problems with compiling Sphinx from source - Windows folk probably want to grab the binaries though. The current version of Thinking Sphinx is made for Sphinx 0.9.8 RC2, so that's the version you will want to install.
+
+The full extent of my installation process on MacOS X:
+
+<pre><code>tar zxvf sphinx-0.9.8-rc2.tar.gz
+cd sphinx-0.9.8-rc2
+./configure
+make
+sudo make install</code></pre>
+
+Of course, your mileage may vary - but it shouldn't be too hard.
+
+h3. Thinking Sphinx
+
+This is also very simple to install - but there's a few approaches, so choose the one that suits you. Consider all the following to be run from your rails app's directory. Firstly, a basic plugin install:
+
+<pre><code>script/plugin install
+  http://rails-oceania.googlecode.com/svn/patallan/plugins/CURRENT/thinking_sphinx</code></pre>
+
+Or, if you're a fan of SVN externals, use that little @-x@ flag:
+
+<pre><code>script/plugin install -x
+  http://rails-oceania.googlecode.com/svn/patallan/plugins/CURRENT/thinking_sphinx</code></pre>
+
+Piston fans, you probably know what to do already, but I'll spell it out, just in case:
+
+<pre><code>piston import
+  http://rails-oceania.googlecode.com/svn/patallan/plugins/CURRENT/thinking_sphinx
+  vendor/plugins/thinking_sphinx</code></pre>
+
+h2. Configuration
+
+Sphinx has a custom configuration file format - but you don't need to worry about that, because pretty much everything that you need to customise can be done using either your models or a YAML file. Let's start with the basics though - defining your search indexes for each of your models.
+
+h3. Indexes
+
+There's a few things to keep in mind when figuring out your indexes (For the hardcore Sphinx users out there, when I say index, I'm probably talking about a source, but for everyone else, it's just simpler). Each index has a document id, some fields, and some attributes. The id has to be unique, so it's easiest to use the model's primary key. The fields contain the text that is *searched*. The attributes contain the data we *filter*, *sort* and *group* by.
+
+h4. Attributes
+
+Attributes can often trip some people up - because strings can't be used as attributes. Integers, floats, boolean values, and integer versions of strings (@str2ordinal@) are all allowed, as well as arrays of integers (Multi-Value Attributes, or MVA). The implications of this will become clear as we go through the rest of the setup details.
+
+h4. Models
+
+Let's say you've got a basic user model, which is tied to a profile, an address, and a collection of blog posts. A possible index setup could be something like the following:
+
+<pre><code>class User < ActiveRecord::Base
+  # ...
+  belongs_to  :role
+  belongs_to  :address
+  has_many    :posts
+  
+  define_index do
+    # fields
+    indexes [:first_name, :last_name], :as => :name, :sortable => true
+    indexes login, :sortable => :true
+    indexes email
+    indexes role.name, :as => :role
+    indexes [
+      address.street_address, address.city,
+      address.state, address.country, address.postcode
+    ], :as => :address
+    indexes posts.subject, :as => :post_subjects
+    indexes posts.content, :as => :post_contents
+    
+    # attributes
+    has created_at, role_id
+    has posts(:id), :as => :post_ids
+  end
+  
+  # ...
+end</code></pre>
+
+There's quite a bit happening in that @define_index@ block, so let's analyse it line by line:
+
+<pre><code>indexes [:first_name, :last_name], :as => :name, :sortable => true</code></pre>
+
+This creates a field using both the first and last name columns, with the alias of 'name', and makes it sortable by Sphinx (using a str2ordinal attribute under the hood).
+
+<pre><code>indexes login, :sortable => true</code></pre>
+
+This adds a field for the login column, and flags it as sortable.
+
+<pre><code>indexes email</code></pre>
+
+Another simple field, with just the email column.
+
+<pre><code>indexes role.name, :as => :role</code></pre>
+
+This uses the model's associations, and indexes the corresponding Role object's name, giving it the more logical alias of 'role'. You can bring in information from any associations into your index - including drilling down several levels, and even polymorphic associations.
+
+<pre><code>indexes [
+  address.street_address, address.city,
+  address.state, address.country, address.postcode
+], :as => :address</code></pre>
+
+This creates a field from a merger of several address fields, all from the @address@ association, and gives it the alias 'address'.
+
+<pre><code>indexes posts.subject, :as => :posts_subjects</code></pre>
+
+Another simple field from concatenating all the posts' subjects together, with 'posts_subjects' as the alias.
+
+<pre><code>indexes posts.content, :as => :posts_contents</code></pre>
+
+One more field, much like the last, but using the content column from posts.
+
+<pre><code>has created_at, role_id</code></pre>
+
+This line creates _two_ attributes - they're not wrapped in brackets, so they don't get merged into one (multi-value) attribute. The first, @created_at@, is a datetime value, but Sphinx only likes timestamps, so the conversion happens automatically.
+
+<pre><code>has posts(:id), :as => :post_ids</code></pre>
+
+For any reserved methods on core Ruby objects - such as @id@ - you can't use method chaining like in the field examples, else everything will fall over. Treat it as a method passing through a symbol, and all is well. Oh, and don't use 'id' for field or attribute names, because it'll get confused with the document id.
+
+Now, obviously you'll need to adapt all this to your own models, but hopefully you have some idea of how to go about it now. But what's next? Well, you need to tell Sphinx to index all that data.
+
+h4. Guidelines
+
+Keep in mind the following when constructing your indexes:
+
+# Fields and attributes with merged columns require an alias
+# If you don't specify an alias, the column's name is used
+# An alias (or column name where aliases aren't specified) must be unique
+
+h2. Managing Sphinx
+
+Let's start by indexing our data into files Sphinx can read:
+
+<pre><code>rake thinking_sphinx:index</code></pre>
+
+Mind you, that's a little verbose, so there's a nice tiny shortcut that does exactly the same thing:
+
+<pre><code>rake ts:in</code></pre>
+
+Keep in mind that you'll want to run this regularly - perhaps every day, perhaps every hour, depending on the volatility of your data - to keep your indexes up to date with your models.
+
+Once the index has run, you'll need to get the Sphinx daemon running:
+
+<pre><code>rake thinking_sphinx:start</code></pre>
+
+There's also tasks to stop and restart, named (imaginatively) @thinking_sphinx:stop@ and @thinking_sphinx:restart@. Bet you would have never guessed that, hey?
+
+Also - you can run the index task while Sphinx is running, and it'll reload the indexes automatically. Prior to 0.9.9 though, Sphinx doesn't reload the configuration file, so if you've changed your index structure or other Sphinx settings, you will need to stop and start it for those changes to take effect.
+
+h2. Searching
+
+Basic searching is a piece of cake:
+
+<pre><code>User.search "Pat"</code></pre>
+
+If you want to sort, try the following:
+
+<pre><code>User.search "Pat", :order => :name</code></pre>
+
+Of course, you can filter by attributes. Let's try and get all users in Australia with a role id of 5:
+
+<pre><code>User.search "Australia", :conditions => {:role_id => 5}</code></pre>
+
+However, you can filter by fields as well - let's limit that search text to just the address field:
+
+<pre><code>User.search :conditions => {:address => "Australia", :role_id => 5}</code></pre>
+
+Now, keep in mind that _all_ search results are paginated - there's no way to avoid that, it's just how Sphinx works. Remember, you're not supposed to be loading up a massive amount of records, you're *searching* for something.
+
+If you have the wonderful "will_paginate":http://errtheblog.com/posts/56-im-paginating-again plugin installed, it will handle the appropriate options - @per_page@, @page@, etc, and the resulting collection can be used with the @will_paginate@ helper. Yes, it's that simple.
+
+Oh, and you can only sort by fields that have been marked as sortable, or by any attribute. It defaults to ascending order, but you can specify descending using @:sort_mode = :desc@. If you want to sort by multiple fields, use a string, like "role_id ASC, created_at DESC" - but you _need_ to have ASC or DESC as part of the string, otherwise you won't get any results at all. Sphinx is fussy like that.
+
+h2. Delta Indexes
+
+One of the major problems users hit when incorporating Sphinx into their systems, is that there's no way to update a single particular document in the indexes. This may be a future feature, but until then, the best way to keep your indexes current is to use delta indexes - small indexes of any changes that have happened since you last did a full index build.
+
+How to enable this, though? Add a boolean field to your model, called 'delta', and add the following line into your @define_index@ block:
+
+<pre><code>set_property :delta => true</code></pre>
+
+Then stop Sphinx, re-index, and start it up again. From that point, any time an indexed model instance is changed, the delta index will be rebuilt. Because it is only a small number of records, the rebuild will happen quickly, and the changes are incorporated into searches. *However*, you still need to run a full index regularly, otherwise the delta index will get larger and larger, and your system will slow down.
+
+h2. More?
+
+That's a good rundown of how to do a lot of the basic stuff in Thinking Sphinx. If you're looking for more information, try the "actual documentation":/rdoc - but I will also be posting some blog entries on how to do some specific things, like geo-location filtering - you can subscribe to "my blog":http://freelancing-gods.com if you wish, but I'll also put links here once the posts exist.
