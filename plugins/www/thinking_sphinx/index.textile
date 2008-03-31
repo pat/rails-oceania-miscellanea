@@ -1,0 +1,23 @@
+h1. Thinking Sphinx
+
+h2. What?
+
+A concise and easy-to-use Ruby library that connects ActiveRecord to the "Sphinx":http://sphinsearch.com search daemon, managing configuration and searching.
+
+h2. Why?
+
+Sphinx is a very fast search engine that indexes data and provides flexible ways of searching it. Thinking Sphinx allows you to link up your models into Sphinx simply and painlessly - because let's face it, searching across multiple fields using SQL is a pain in the neck.
+
+h2. Where?
+
+Grab the current version straight into your plugins directory using @script/plugin install@ or "Piston":http://piston.rubyforge.org/ using the following URL:
+
+<pre><code>http://rails-oceania.googlecode.com/svn/patallan/plugins/CURRENT/thinking_sphinx</code></pre>
+
+h2. Who?
+
+"Pat Allan":http://freelancing-gods.com is the developer behind Thinking Sphinx, and the underlying API for Sphinx, "Riddle":http://riddle.freelancing-gods.com.
+
+h2. Most importantly, How?
+
+Ah, well that deserves "its own page":/usage.html - all about setting up and using both Sphinx and Thinking Sphinx.

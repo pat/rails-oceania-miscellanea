@@ -1,0 +1,85 @@
+body, div, dl, dt, dd, li, h1, h2, h3, h4, h5, h6,
+pre, form, fieldset, p, blockquote, th, td {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  text-align: center;
+}
+
+ul, ol {
+  margin: 14px;
+  padding-left: 20px;
+}
+
+html > body {
+  font-size: 14px;
+}
+
+p {
+  line-height: 1.2857em;
+  margin: 1.2857em 14px;
+}
+
+a {
+  color: #440f22;
+}
+
+h1 {
+  font-size: 1.5em;
+  line-height: 1.4286;
+  margin: 0.1428em 0 0.1095em 0;
+  padding: 0 14px;
+  text-transform: uppercase;
+  font-weight: normal;
+  letter-spacing: 0.05em;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #440F22;
+}
+
+h2 {
+  font-weight: normal;
+  font-size: 1.2em;
+  line-height: 1.4286;
+  letter-spacing: 0.05em;
+  margin: 1em 0 0.4em 0;
+  font-family: Georgia, "Times New Roman", serif;
+  text-transform: uppercase;
+  padding: 0.15em 14px 0 14px;
+  border-top: 0.0416em dotted #18b1b8;
+}
+
+h3 {
+  font-size: 1.1428em;
+  line-height: 1.1250em;
+  margin: 1.1250em 14px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+h4 {
+  font-family: Georgia, "Times New Roman", serif;
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+code,
+pre code {
+  font-family: "Monaco", "Courier", monospace;
+  font-size: 0.7857em;
+  line-height: 1.6363em;
+  background-color: #DCF5F5;
+}
+
+pre {
+  margin: 0 14px;
+  padding: 0.6428em 1em;
+  background-color: #DCF5F5;
+}
+
+div.content {
+  margin: 0 auto;
+  padding: 1.3333em 0;
+  text-align: left;
+  width: 80%;
+}
