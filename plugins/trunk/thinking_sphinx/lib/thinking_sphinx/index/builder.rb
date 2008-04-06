@@ -40,7 +40,13 @@ module ThinkingSphinx
         def has(*args)
           options = args.extract_options!
           args.each do |columns|
-            columns = FauxColumn.new(columns) if columns.is_a?(Symbol)
+            columns = case columns
+            when Symbol, String
+              FauxColumn.new(columns)
+            else
+              columns
+            end
+            
             attributes << Attribute.new(columns, options)
           end
         end

@@ -1,10 +1,15 @@
 module ThinkingSphinx
+  # This class both keeps track of the configuration settings for Sphinx and
+  # also generates the resulting file for Sphinx to use.
   class Configuration
     attr_accessor :config_file, :searchd_log_file, :query_log_file,
       :pid_file, :searchd_file_path, :address, :port, :allow_star, :mem_limit,
       :max_matches, :morphology, :charset_type
     attr_reader :environment
     
+    # Load in the configuration settings - this will look for config/sphinx.yml
+    # and parse it according to the current environment.
+    # 
     def initialize
       @environment = ENV['RAILS_ENV'] || "development"
       
@@ -77,6 +82,7 @@ searchd
         CONFIG
         
         ThinkingSphinx.indexed_models.each do |model|
+          model           = model.constantize
           sources         = []
           prefixed_fields = []
           infixed_fields  = []
@@ -174,7 +180,12 @@ index #{model.name.downcase}
     def load_models
       Dir[RAILS_ROOT + "/app/models/**/*.rb"].each do |file|
         model_name = file.gsub(/^.*\/([\w_]+)\.rb/, '\1')
+        
         next if model_name.nil?
+        next if ::ActiveRecord::Base.send(:subclasses).detect { |model|
+          model.name == model_name
+        }
+        
         begin
           model_name.camelize.constantize
         rescue NameError

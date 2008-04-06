@@ -6,7 +6,7 @@ module ThinkingSphinx
   #
   # One key thing to remember - if you're using the attribute manually to
   # generate SQL statements, you'll need to set the base model, and all the
-  # associations. Which can get messy.
+  # associations. Which can get messy. Use Index.link!, it really helps.
   # 
   class Attribute
     attr_accessor :alias, :columns, :associations, :model
@@ -19,7 +19,7 @@ module ThinkingSphinx
     # - :type => :attribute_type
     #
     # Alias is only required in three circumstances: when there's
-    # another attribute or column with the same name, when the column name is
+    # another attribute or field with the same name, when the column name is
     # 'id', or when there's more than one column.
     # 
     # Type is not required, unless you want to force a column to be a certain
@@ -50,7 +50,7 @@ module ThinkingSphinx
     #     :type => :datetime
     #   )
     # 
-    def initialize(columns, options={})
+    def initialize(columns, options = {})
       @columns      = Array(columns)
       @associations = {}
       
@@ -59,7 +59,7 @@ module ThinkingSphinx
     end
     
     # Get the part of the SELECT clause related to this attribute. Don't forget
-    # to set your model and attributes first though.
+    # to set your model and associations first though.
     #
     # This will concatenate strings and arrays of integers, and convert
     # datetimes to timestamps, as needed.
@@ -69,23 +69,19 @@ module ThinkingSphinx
         column_with_prefix(column)
       }.join(', ')
       
-      if associations.values.flatten.length > 1
-        clause = "CONCAT_WS(' ', #{clause})"
-      end
+      clause = "CONCAT_WS(' ', #{clause})" if concat_ws?
+      clause = "CAST(GROUP_CONCAT(#{clause} SEPARATOR ',') AS CHAR)" if is_many?
+      clause = "UNIX_TIMESTAMP(#{clause})" if type == :datetime
+      clause = "IFNULL(#{clause}, '')" if type == :string
       
-      if is_many?
-        "CAST(GROUP_CONCAT(#{clause} SEPARATOR ',') AS CHAR) AS `#{unique_name}`"
-      elsif type == :datetime
-        "UNIX_TIMESTAMP(#{clause}) AS `#{unique_name}`"
-      else
-        "#{clause} AS `#{unique_name}`"
-      end
+      "#{clause} AS `#{unique_name}`"
     end
     
     # Get the part of the GROUP BY clause related to this attribute - if one is
     # needed. If not, all you'll get back is nil. The latter will happen if
     # there isn't actually a real column to get data from, or if there's
-    # multiple data sources.
+    # multiple data values (read: a has_many or has_and_belongs_to_many
+    # association).
     # 
     def to_group_sql
       case
@@ -96,6 +92,30 @@ module ThinkingSphinx
           column_with_prefix(column)
         }
       end
+    end
+    
+    # Indication of whether the columns should be concatenated with a space
+    # between each value. True if there's either multiple sources or multiple
+    # associations.
+    # 
+    def concat_ws?
+      multiple_sources? || multiple_associations?
+    end
+    
+    # Checks the association tree for each column - if they're all the same,
+    # returns false.
+    # 
+    def multiple_sources?
+      first = associations[@columns.first]
+      
+      !@columns.all? { |col| associations[col] == first }
+    end
+    
+    # Checks whether any column requires multiple associations (which only
+    # happens for polymorphic situations).
+    # 
+    def multiple_associations?
+      associations.any? { |col,assocs| assocs.length > 1 }
     end
     
     # Generates the appropriate attribute statement for a Sphinx configuration
