@@ -65,7 +65,9 @@ module ThinkingSphinx
             index = Index.new(self, &block)
             
             @indexes << index
-            ThinkingSphinx.indexed_models << self
+            unless ThinkingSphinx.indexed_models.include?(self.name)
+              ThinkingSphinx.indexed_models << self.name
+            end
             
             if index.delta?
               before_save   :toggle_delta

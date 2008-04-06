@@ -37,13 +37,18 @@ module ThinkingSphinx
       #
       def search(*args)
         results, client = search_results(*args.clone)
+        
+        ::ActiveRecord::Base.logger.error(
+          "Sphinx Error: #{results[:error]}"
+        ) if results[:error]
+        
         options = args.extract_options!
         klass   = options[:class]
         page    = options[:page] ? options[:page].to_i : 1
         
         begin
           pager = WillPaginate::Collection.new(page,
-            client.limit, results[:total])
+            client.limit, results[:total] || 0)
           pager.replace results[:matches].collect { |match|
             instance_from_result match, options, klass
           }
@@ -94,12 +99,12 @@ module ThinkingSphinx
           Configuration.new.load_models
           
           @models_by_crc = ThinkingSphinx.indexed_models.inject({}) do |hash, model|
-            hash[model.to_crc32] = model
+            hash[model.constantize.to_crc32] = model
             hash
           end
         end
         
-        @models_by_crc[crc]
+        @models_by_crc[crc].constantize
       end
       
       def client_from_options(options)
