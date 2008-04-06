@@ -1,6 +1,36 @@
 module ThinkingSphinx
   # This class both keeps track of the configuration settings for Sphinx and
   # also generates the resulting file for Sphinx to use.
+  # 
+  # Here are the default settings, relative to RAILS_ROOT where relevant:
+  #
+  # config file::      config/#{environment}.sphinx.conf
+  # searchd log file:: log/searchd.log
+  # query log file::   log/searchd.query.log
+  # pid file::         log/searchd.#{environment}.pid
+  # searchd files::    db/sphinx/#{environment}/
+  # address::          0.0.0.0 (all)
+  # port::             3312
+  # allow star::       false
+  # mem limit::        64M
+  # max matches::      1000
+  # morphology::       stem_en
+  # charset type::     utf-8
+  #
+  # If you want to change these settings, create a YAML file at
+  # config/sphinx.yml with settings for each environment, in a similar
+  # fashion to database.yml - using the following keys: config_file,
+  # searchd_log_file, query_log_file, pid_file, searchd_file_path, port,
+  # allow_star, mem_limit, max_matches, morphology, charset_type. I think
+  # you've got the idea.
+  # 
+  # Each setting in the YAML file is optional - so only put in the ones you
+  # want to change.
+  #
+  # Keep in mind, if for some particular reason you're using a version of
+  # Sphinx older than 0.9.8 r871 (that's prior to the proper 0.9.8 release),
+  # don't set allow_star to true.
+  # 
   class Configuration
     attr_accessor :config_file, :searchd_log_file, :query_log_file,
       :pid_file, :searchd_file_path, :address, :port, :allow_star, :mem_limit,
@@ -28,34 +58,9 @@ module ThinkingSphinx
       parse_config
     end
     
-    # Generate the config file for Sphinx. This has the following default
-    # settings, relative to RAILS_ROOT where relevant:
-    #
-    # config file::      config/#{environment}.sphinx.conf
-    # searchd log file:: log/searchd.log
-    # query log file::   log/searchd.query.log
-    # pid file::         log/searchd.#{environment}.pid
-    # searchd files::    db/sphinx/#{environment}/
-    # address::          0.0.0.0 (all)
-    # port::             3312
-    # allow star::       false
-    # mem limit::        64M
-    # max matches::      1000
-    # morphology::       stem_en
-    # charset type::     utf-8
-    #
-    # If you want to change these settings, create a YAML file at
-    # config/sphinx.yml with settings for each environment, in a similar
-    # fashion to database.yml - using the following keys: config_file,
-    # searchd_log_file, query_log_file, pid_file,
-    # searchd_file_path, port, allow_star, mem_limit, max_matches, morphology,
-    # charset_type.
-    # 
-    # Each setting is optional, so only add the ones you want to change from
-    # the defaults.
-    #
-    # Note: allow_star should not be set to true unless using sphinx 0.9.8 r871
-    # or later.
+    # Generate the config file for Sphinx by using all the settings defined and
+    # looping through all the models with indexes to build the relevant
+    # indexer and searchd configuration, and sources and indexes details.
     #
     def build(file_path=nil)
       load_models
@@ -176,7 +181,10 @@ index #{model.name.downcase}
       end
     end
     
-    # Make sure all models are loaded
+    # Make sure all models are loaded - without reloading any that
+    # ActiveRecord::Base is already aware of (otherwise we start to hit some
+    # messy dependencies issues).
+    # 
     def load_models
       Dir[RAILS_ROOT + "/app/models/**/*.rb"].each do |file|
         model_name = file.gsub(/^.*\/([\w_]+)\.rb/, '\1')
@@ -196,6 +204,9 @@ index #{model.name.downcase}
     
     private
     
+    # Parse the config/sphinx.yml file - if it exists - then use the attribute
+    # accessors to set the appropriate values. Nothing too clever.
+    # 
     def parse_config
       path = "#{RAILS_ROOT}/config/sphinx.yml"
       return unless File.exists?(path)
