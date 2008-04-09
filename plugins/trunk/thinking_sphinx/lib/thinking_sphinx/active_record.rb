@@ -18,48 +18,49 @@ module ThinkingSphinx
           #
           # An example or two:
           #
-          #   define_index do |index|
-          #     index.includes(:id).as.model_id
-          #     index.includes.name
+          #   define_index
+          #     indexes :id, :as => :model_id
+          #     indexes name
           #   end
           #
           # You can also grab fields from associations - multiple levels deep
           # if necessary.
           #
-          #   define_index do |index|
-          #     index.includes.tags.name.as.tag
-          #     index.includes.articles.content
-          #     index.includes.orders.line_items.product.name.as.product
+          #   define_index do
+          #     indexes tags.name, :as => :tag
+          #     indexes articles.content
+          #     indexes orders.line_items.product.name, :as => :product
           #   end
           #
           # And it will automatically concatenate multiple fields:
           #
-          #   define_index do |index|
-          #     index.includes.author(:first_name, :last_name).as.author
+          #   define_index do
+          #     indexes [author.first_name, author.last_name], :as => :author
           #   end
           #
-          # If you want some (integer, float or timestamp) attributes, the
-          # syntax is a little different:
+          # The #indexes method is for fields - if you want attributes, use
+          # #has instead. All the same rules apply - but keep in mind that
+          # attributes are for sorting, grouping and filtering, not searching.
           #
-          #   define_index do |index|
-          #     index.has.created_at
-          #     index.has.updated_at
+          #   define_index do
+          #     # fields ...
+          #     
+          #     has created_at, updated_at
           #   end
-          #
-          # Please note that attributes can't be requested from associations.
           #
           # One last feature is the delta index. This requires the model to
           # have a boolean field named 'delta', and is enabled as follows:
           #
-          #   define_index do |index|
-          #     index.delta = true
-          #     # usual attributes and fields go here
+          #   define_index do
+          #     # fields ...
+          #     # attributes ...
+          #     
+          #     set_property :delta => true
           #   end
           #
-          # In previous versions of Thinking Sphinx, delta indexes were one
-          # step behind the most recent record changes. This has since been
-          # fixed.
-          #
+          # There's much more documentation for each of these methods over in
+          # the Builder class.
+          # 
           def define_index(&block)
             @indexes ||= []
             index = Index.new(self, &block)
@@ -78,6 +79,12 @@ module ThinkingSphinx
           end
           alias_method :sphinx_index, :define_index
           
+          # Generate a unique CRC value for the model's name, to use to
+          # determine which Sphinx documents belong to which AR records.
+          # 
+          # Really only written for internal use - but hey, if it's useful to
+          # you in some other way, awesome.
+          # 
           def to_crc32
             result = 0xFFFFFFFF
             self.name.each_byte do |byte|

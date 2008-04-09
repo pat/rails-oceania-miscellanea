@@ -1,4 +1,10 @@
 module ThinkingSphinx
+  # Once you've got those indexes in and built, this is the stuff that matters
+  # - how to search! This class provides a generic search interface - which you
+  # can use to search all your indexed models at once. Most times, you will
+  # just want a specific model's results - to search and search_for_ids methods
+  # will do the job in exactly the same manner when called from a model.
+  # 
   class Search
     class << self
       # Searches for results that match the parameters provided. Will only
@@ -17,23 +23,82 @@ module ThinkingSphinx
         end
       end
 
-      # Searches for results that match the parameters provided. These
-      # parameter keys should match the names of fields in the indexes.
+      # Searches through the Sphinx indexes for relevant matches. There's
+      # various ways to search, sort, group and filter - which are covered
+      # below.
       #
-      # This will use WillPaginate for results if the plugin is installed.
-      # The same parameters - :page and :per_page - work as expected, and
-      # the returned result set can be used by the will_paginate helper.
+      # Also, if you have WillPaginate installed, the search method can be used
+      # just like paginate. The same parameters - :page and :per_page - work as
+      # expected, and the returned result set can be used by the will_paginate
+      # helper.
+      # 
+      # == Basic Searching
       #
-      # Please use only specified attributes when ordering results -
-      # anything else will make the query fall over.
+      # The simplest way of searching is straight text.
+      # 
+      #   ThinkingSphinx::Search.search "pat"
+      #   ThinkingSphinx::Search.search "google"
+      #   User.search "pat", :page => (params[:page] || 1)
+      #   Article.search "relevant news issue of the day"
       #
-      # Examples:
+      # If you specify :include, like in an #find call, this will be respected
+      # when loading the relevant models from the search results.
+      # 
+      #   User.search "pat", :include => :posts
       #
-      #   Invoice.search :conditions => {:customer => "Pat"}
-      #   Invoice.search "Pat" # search all fields
-      #   Invoice.search "Pat", :page => (params[:page] || 1)
-      #   Invoice.search "Pat", :order => "created_at ASC"
-      #   Invoice.search "Pat", :include => :line_items
+      # == Searching by Fields
+      # 
+      # If you want to step it up a level, you can limit your search terms to
+      # specific fields:
+      # 
+      #   User.search :conditions => {:name => "pat"}
+      #
+      # This uses Sphinx's extended match mode, unless you specify a different
+      # match mode explicitly (but then this way of searching won't work). Also
+      # note that you don't need to put in a search string.
+      #
+      # == Searching by Attributes
+      #
+      # Also known as filters, you can limit your searches to documents that
+      # have specific values for their attributes. This is done _exactly_ like
+      # limiting words to certain fields:
+      #
+      #   ThinkingSphinx::Search.search :conditions => {:parent_id => 10}
+      #
+      # Filters can be single values, arrays of values, or ranges.
+      # 
+      #   Article.search "East Timor", :conditions => {:rating => 3..5}
+      #
+      # == Sorting
+      #
+      # Sphinx can only sort by attributes - but if you specify a field as
+      # sortable, you can use field names, and Thinking Sphinx will interpret
+      # accordingly, but only if you use the 'order' option - like a #find
+      # call.
+      #
+      #   Location.search "Melbourne", :order => :state
+      #   User.search :conditions => {:role_id => 2}, :order => "name ASC"
+      #
+      # Keep in mind that if you use a string, you *must* specify the direction
+      # (ASC or DESC) else Sphinx won't return any results. If you use a symbol
+      # then Thinking Sphinx assumes ASC, but if you wish to state otherwise,
+      # use the :sort_mode option:
+      #
+      #   Location.search "Melbourne", :order => :state, :sort_mode => :desc
+      #
+      # Of course, there are other sort modes - check out the Sphinx
+      # documentation[http://sphinxsearch.com/doc.html] for that level of
+      # detail though.
+      #
+      # == Grouping
+      # 
+      # For this you can use the group_by, group_clause and group_function
+      # options - which are all directly linked to Sphinx's expectations. No
+      # magic from Thinking Sphinx. It can get a little tricky, so make sure
+      # you read all the relevant
+      # documentation[http://sphinxsearch.com/doc.html#clustering] first.
+      # 
+      # Yes this section will be expanded, but this is a start.
       #
       def search(*args)
         results, client = search_results(*args.clone)
@@ -61,6 +126,10 @@ module ThinkingSphinx
       
       private
       
+      # This method handles the common search functionality, and returns both
+      # the result hash and the client. Not super elegant, but it'll do for
+      # the moment.
+      # 
       def search_results(*args)
         options = args.extract_options!
         client  = client_from_options options
@@ -88,12 +157,17 @@ module ThinkingSphinx
         return results, client
       end
       
+      # Either use the provided class to instantiate a result from a model, or
+      # get the result's CRC value and determine the class from that.
+      # 
       def instance_from_result(result, options, klass = nil)
         (klass ? klass : class_from_crc(result[:attributes]["class_crc"])).find(
           result[:doc], :include => options[:include]
         )
       end
       
+      # Convert a CRC value to the corresponding class.
+      # 
       def class_from_crc(crc)
         unless @models_by_crc
           Configuration.new.load_models
@@ -107,6 +181,9 @@ module ThinkingSphinx
         @models_by_crc[crc].constantize
       end
       
+      # Set all the appropriate settings for the client, using the provided
+      # options hash.
+      # 
       def client_from_options(options)
         config = ThinkingSphinx::Configuration.new
         client = Riddle::Client.new "localhost", config.port
@@ -130,6 +207,9 @@ module ThinkingSphinx
         client
       end
       
+      # Translate field and attribute conditions to the relevant search string
+      # and filters.
+      # 
       def search_conditions(klass, conditions={})
         attributes = klass ? klass.indexes.collect { |index|
           index.attributes.collect { |attrib| attrib.unique_name }
@@ -156,6 +236,10 @@ module ThinkingSphinx
         return search_string, filters
       end
       
+      # Return the appropriate latitude and longitude values, depending on
+      # whether the relevant attributes have been defined, and also whether
+      # there's actually any values.
+      # 
       def anchor_conditions(klass, options)
         attributes = klass ? klass.indexes.collect { |index|
           index.attributes.collect { |attrib| attrib.unique_name }
@@ -194,6 +278,9 @@ module ThinkingSphinx
         } : nil
       end
       
+      # Set the sort options using the :order key as well as the appropriate
+      # Riddle settings.
+      # 
       def set_sort_options!(client, options)
         klass = options[:class]
         fields = klass ? klass.indexes.collect { |index|
@@ -216,6 +303,9 @@ module ThinkingSphinx
         end
       end
       
+      # Search through a collection of fields and translate any appearances
+      # of them in a string to their attribute equivalent for sorting.
+      # 
       def sorted_fields_to_attributes(string, fields)
         fields.each { |field|
           string.gsub!(/(^|\s)#{field}(,?\s|$)/) { |match|
