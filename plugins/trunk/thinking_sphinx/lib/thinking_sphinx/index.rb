@@ -120,6 +120,7 @@ GROUP BY #{ (
       sql = "SELECT MIN(`#{@model.primary_key}`), MAX(`#{@model.primary_key}`) " +
             "FROM `#{@model.table_name}` "
       sql << "WHERE `#{@model.table_name}`.`delta` = #{options[:delta] ? 1 : 0}" if self.delta?
+      sql
     end
     
     # Returns the SQL query to run before a full index - ie: nothing unless the
