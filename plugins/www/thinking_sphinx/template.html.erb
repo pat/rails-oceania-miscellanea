@@ -7,8 +7,26 @@
     <link rel="stylesheet" href="plugin.css" type="text/css" media="screen" title="Core CSS" charset="utf-8">
   </head>
   <body>
-    <div class="content">
+    <div id="main">
+      <h1>thinking sphinx</h1>
+      <div id="version">
+        <p>Current Version</p>
+        <span class="numbers">0.9.0</span>
+      </div>
+      
       <%= content %>
+      
+      <p class="coda">
+        <a href="http://freelancing-gods.com">Pat Allan</a>, 2008<br />
+        Theme extended from <a href="http://rb2js.rubyforge.org/">Paul Battley</a>
+      </p>
     </div>
+    
+    <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript" src="/plugin.js"></script>
+    </script>
   </body>
 </html>
