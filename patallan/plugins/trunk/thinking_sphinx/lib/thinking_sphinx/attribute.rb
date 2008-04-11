@@ -49,7 +49,10 @@ module ThinkingSphinx
     #     :as   => :indexed_at,
     #     :type => :datetime
     #   )
-    # 
+    #
+    # If you're creating attributes for latitude and longitude, don't forget
+    # that Sphinx expects these values to be in radians.
+    #  
     def initialize(columns, options = {})
       @columns      = Array(columns)
       @associations = {}

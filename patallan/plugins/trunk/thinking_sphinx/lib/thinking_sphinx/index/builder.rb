@@ -116,6 +116,9 @@ module ThinkingSphinx
         # record. Might be best to read through the Sphinx documentation to get
         # a better idea of that though.
         # 
+        # If you're creating attributes for latitude and longitude, don't
+        # forget that Sphinx expects these values to be in radians.
+        # 
         def has(*args)
           options = args.extract_options!
           args.each do |columns|
