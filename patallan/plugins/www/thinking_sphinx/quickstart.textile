@@ -1,0 +1,49 @@
+h2. Quickstart
+
+Okay, here's the brief explanation of how to set up Thinking Sphinx.
+
+h3. Install Sphinx
+
+Go grab the files you need from "the Sphinx site":http://sphinxsearch.com/downloads.html.
+
+h3. Install Thinking Sphinx
+
+<pre><code>script/plugin install
+  http://rails-oceania.googlecode.com/svn/patallan/plugins/CURRENT/thinking_sphinx</code></pre>
+
+h3. Set up your indexes
+
+Say you have an Article model, you might want to do something like the following - adapt to taste.
+
+<pre><code>class Article < ActiveRecord::Base
+  # ...
+  
+  define_index do
+    indexes subject, :sortable => true
+    indexes content
+    indexes author.name, :as => :author, :sortable => true
+    
+    has author_id, created_at, updated_at
+  end
+  
+  # ...
+end</code></pre>
+
+h3. Index your data
+
+Run the @thinking_sphinx:index@ rake task.
+
+h3. Fire up Sphinx
+
+Run the @thinking_sphinx:start@ rake task.
+
+h3. Get Searching!
+
+Again with an Article model:
+
+<pre><code>Article.search "topical issue"
+Article.search "something", :order => :created_at, :sort_mode => :desc
+Article.search "everything", :conditions => {:author_id => 5}
+Article.search :conditions => {:subject => "Sphinx"}</code></pre>
+
+And that's pretty much it - for more detail, check out the "usage":/usage.html page.

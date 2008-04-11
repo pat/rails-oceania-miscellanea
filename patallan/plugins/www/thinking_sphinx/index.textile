@@ -1,5 +1,3 @@
-h1. Thinking Sphinx
-
 h2. What?
 
 A concise and easy-to-use Ruby library that connects ActiveRecord to the "Sphinx":http://sphinsearch.com search daemon, managing configuration and searching.
@@ -20,4 +18,4 @@ h2. Who?
 
 h2. Most importantly, How?
 
-Ah, well that deserves "its own page":/usage.html - all about setting up and using both Sphinx and Thinking Sphinx.
+Ah, well that deserves a couple of pages - firstly, the "quickstart guide":/quickstart.html, and then for more detail, have a read of the "usage page":/usage.html, which cover setting up and using both Sphinx and Thinking Sphinx.

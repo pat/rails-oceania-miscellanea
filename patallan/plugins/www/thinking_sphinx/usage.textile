@@ -1,10 +1,10 @@
-h1. Thinking Sphinx - Usage
+h2. Usage
 
-h2. Installation
+h3. Installation
 
 To get everything up and running, you'll need to install *Sphinx*, and then the plugin itself.
 
-h3. Sphinx
+h4. Sphinx
 
 Firstly, head on over to the "Sphinx download page":http://sphinxsearch.com/downloads.html. I've never had any problems with compiling Sphinx from source - Windows folk probably want to grab the binaries though. The current version of Thinking Sphinx is made for Sphinx 0.9.8 RC2, so that's the version you will want to install.
 
@@ -18,7 +18,7 @@ sudo make install</code></pre>
 
 Of course, your mileage may vary - but it shouldn't be too hard.
 
-h3. Thinking Sphinx
+h4. Thinking Sphinx
 
 This is also very simple to install - but there's a few approaches, so choose the one that suits you. Consider all the following to be run from your rails app's directory. Firstly, a basic plugin install:
 
@@ -36,19 +36,19 @@ Piston fans, you probably know what to do already, but I'll spell it out, just i
   http://rails-oceania.googlecode.com/svn/patallan/plugins/CURRENT/thinking_sphinx
   vendor/plugins/thinking_sphinx</code></pre>
 
-h2. Configuration
+h3. Configuration
 
 Sphinx has a custom configuration file format - but you don't need to worry about that, because pretty much everything that you need to customise can be done using either your models or a YAML file. Let's start with the basics though - defining your search indexes for each of your models.
 
-h3. Indexes
+h4. Indexes
 
 There's a few things to keep in mind when figuring out your indexes (For the hardcore Sphinx users out there, when I say index, I'm probably talking about a source, but for everyone else, it's just simpler). Each index has a document id, some fields, and some attributes. The id has to be unique, so it's easiest to use the model's primary key. The fields contain the text that is *searched*. The attributes contain the data we *filter*, *sort* and *group* by.
 
-h4. Attributes
+h5. Attributes
 
 Attributes can often trip some people up - because strings can't be used as attributes. Integers, floats, boolean values, and integer versions of strings (@str2ordinal@) are all allowed, as well as arrays of integers (Multi-Value Attributes, or MVA). The implications of this will become clear as we go through the rest of the setup details.
 
-h4. Models
+h5. Models
 
 Let's say you've got a basic user model, which is tied to a profile, an address, and a collection of blog posts. A possible index setup could be something like the following:
 
@@ -122,7 +122,7 @@ For any reserved methods on core Ruby objects - such as @id@ - you can't use met
 
 Now, obviously you'll need to adapt all this to your own models, but hopefully you have some idea of how to go about it now. But what's next? Well, you need to tell Sphinx to index all that data.
 
-h4. Guidelines
+h5. Guidelines
 
 Keep in mind the following when constructing your indexes:
 
@@ -130,7 +130,7 @@ Keep in mind the following when constructing your indexes:
 # If you don't specify an alias, the column's name is used
 # An alias (or column name where aliases aren't specified) must be unique
 
-h2. Managing Sphinx
+h3. Managing Sphinx
 
 Let's start by indexing our data into files Sphinx can read:
 
@@ -150,7 +150,7 @@ There's also tasks to stop and restart, named (imaginatively) @thinking_sphinx:s
 
 Also - you can run the index task while Sphinx is running, and it'll reload the indexes automatically. Prior to 0.9.9 though, Sphinx doesn't reload the configuration file, so if you've changed your index structure or other Sphinx settings, you will need to stop and start it for those changes to take effect.
 
-h2. Searching
+h3. Searching
 
 Basic searching is a piece of cake:
 
@@ -174,7 +174,7 @@ If you have the wonderful "will_paginate":http://errtheblog.com/posts/56-im-pagi
 
 Oh, and you can only sort by fields that have been marked as sortable, or by any attribute. It defaults to ascending order, but you can specify descending using @:sort_mode = :desc@. If you want to sort by multiple fields, use a string, like "role_id ASC, created_at DESC" - but you _need_ to have ASC or DESC as part of the string, otherwise you won't get any results at all. Sphinx is fussy like that.
 
-h2. Delta Indexes
+h3. Delta Indexes
 
 One of the major problems users hit when incorporating Sphinx into their systems, is that there's no way to update a single particular document in the indexes. This may be a future feature, but until then, the best way to keep your indexes current is to use delta indexes - small indexes of any changes that have happened since you last did a full index build.
 
@@ -184,6 +184,6 @@ How to enable this, though? Add a boolean field to your model, called 'delta', a
 
 Then stop Sphinx, re-index, and start it up again. From that point, any time an indexed model instance is changed, the delta index will be rebuilt. Because it is only a small number of records, the rebuild will happen quickly, and the changes are incorporated into searches. *However*, you still need to run a full index regularly, otherwise the delta index will get larger and larger, and your system will slow down.
 
-h2. More?
+h3. More?
 
 That's a good rundown of how to do a lot of the basic stuff in Thinking Sphinx. If you're looking for more information, try the "actual documentation":/rdoc - but I will also be posting some blog entries on how to do some specific things, like geo-location filtering - you can subscribe to "my blog":http://freelancing-gods.com if you wish, but I'll also put links here once the posts exist.
