@@ -1,9 +1,10 @@
 module ThinkingSphinx
-  # Once you've got those indexes in and built, this is the stuff that matters
-  # - how to search! This class provides a generic search interface - which you
-  # can use to search all your indexed models at once. Most times, you will
-  # just want a specific model's results - to search and search_for_ids methods
-  # will do the job in exactly the same manner when called from a model.
+  # Once you've got those indexes in and built, this is the stuff that
+  # matters - how to search! This class provides a generic search
+  # interface - which you can use to search all your indexed models at once.
+  # Most times, you will just want a specific model's results - to search and
+  # search_for_ids methods will do the job in exactly the same manner when
+  # called from a model.
   # 
   class Search
     class << self
@@ -100,6 +101,16 @@ module ThinkingSphinx
       # 
       # Yes this section will be expanded, but this is a start.
       #
+      # == Geo/Location Searching
+      #
+      # Sphinx - and therefore Thinking Sphinx - has the facility to search
+      # around a geographical point, using a given latitude and longitude. To
+      # take advantage of this, you will need to have both of those values in
+      # attributes. To search with that point, you can then use one of the
+      # following syntax examples:
+      # 
+      #   Address.search "Melbourne", :geo => [1.4, -2.217]
+      #   Address.search "Australia", :geo => [-0.55, 3.108], 
       def search(*args)
         results, client = search_results(*args.clone)
         
