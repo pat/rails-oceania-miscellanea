@@ -102,6 +102,7 @@ GROUP BY #{ (
   @fields.collect { |field| field.to_group_sql }.compact +
   @attributes.collect { |attribute| attribute.to_group_sql }.compact
 ).join(", ") }
+ORDER BY NULL
       SQL
     end
     

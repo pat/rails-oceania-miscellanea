@@ -79,7 +79,7 @@ module ThinkingSphinx
             
             if fields.last.sortable
               attributes << Attribute.new(
-                columns.collect { |col| col.clone },
+                fields.last.columns.collect { |col| col.clone },
                 options.merge(
                   :type => :string,
                   :as => fields.last.unique_name.to_s.concat("_sort").to_sym
