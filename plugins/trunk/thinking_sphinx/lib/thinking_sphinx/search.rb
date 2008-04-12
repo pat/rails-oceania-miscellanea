@@ -202,8 +202,8 @@ module ThinkingSphinx
         index_options = klass ? klass.indexes.last.options : {}
         
         [
-          :max_matches, :sort_mode, :sort_by, :id_range, :group_by,
-          :group_function, :group_clause, :group_distinct, :cut_off,
+          :max_matches, :match_mode, :sort_mode, :sort_by, :id_range,
+          :group_by, :group_function, :group_clause, :group_distinct, :cut_off,
           :retry_count, :retry_delay, :index_weights, :rank_mode,
           :max_query_time, :field_weights, :filters, :anchor, :limit
         ].each do |key|
@@ -214,6 +214,10 @@ module ThinkingSphinx
         end
         
         client.anchor = anchor_conditions(klass, options) || {} if client.anchor.empty?
+        
+        client.filters << Riddle::Client::Filter.new(
+          "class_crc", options[:classes].collect { |klass| klass.to_crc32 }
+        ) if options[:classes]
         
         client
       end
