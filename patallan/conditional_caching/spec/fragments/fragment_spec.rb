@@ -59,7 +59,7 @@ class ConditionalFragmentsController < ActionController::Base
   attr_accessor :will_cache
   attr_accessor :inner_code
   
-  self.template_root = File.join(File.dirname(__FILE__))
+  append_view_path File.join(File.dirname(__FILE__))
 
   def show
     self.inner_code = !conditional_read_fragment(self.will_cache) 
