@@ -8,7 +8,7 @@ require "action_caching"
 require "fragment_caching"
 
 FILE_STORE_PATH = File.join(File.dirname(__FILE__), "tmp/cache")
-ActionController::Base.fragment_cache_store = :file_store, FILE_STORE_PATH
+ActionController::Base.cache_store = :file_store, FILE_STORE_PATH
 ActionController::Base.perform_caching = true
 ActionController::Base.logger = nil
 
